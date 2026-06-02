@@ -1,0 +1,14 @@
+# Claude AI conversation exports
+Claude-Beout.ai Startup.md
+Claude-*.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Node
+node_modules/
