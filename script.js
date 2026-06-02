@@ -1,5 +1,5 @@
 /* ==============================================
-   beout.ai — Coming Soon | JavaScript
+   beout.ai — JavaScript
    Bilingual EN / AR with full i18n
    ============================================== */
 
@@ -10,55 +10,68 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollReveal();
     initForm();
     initLangToggle();
-    // Typing starts after a short delay
-    setTimeout(() => initTyping(), 1200);
-
-    // Fade in body
-    requestAnimationFrame(() => {
-        document.body.classList.add('loaded');
-    });
+    initNavbarScroll();
+    setTimeout(() => initTyping(), 1000);
+    requestAnimationFrame(() => document.body.classList.add('loaded'));
 });
+
+/* ============================================
+   NAVBAR SCROLL
+   ============================================ */
+function initNavbarScroll() {
+    const navbar = document.getElementById('navbar');
+    let lastScroll = 0;
+    window.addEventListener('scroll', () => {
+        const y = window.scrollY;
+        navbar.classList.toggle('scrolled', y > 60);
+        lastScroll = y;
+    }, { passive: true });
+}
 
 /* ============================================
    INTERNATIONALIZATION (i18n)
    ============================================ */
 const i18n = {
     en: {
-        nav_status: 'Systems Initializing',
-        hero_desc: 'Egypt\'s first <strong>AI-native cybersecurity</strong> ecosystem.<br>Predictive protection. Autonomous investigation. Zero compromise.',
+        nav_status: 'Systems Online',
+        hero_desc: 'Egypt\'s first <strong>AI-native cybersecurity</strong> ecosystem. Predictive protection. Autonomous investigation. Zero compromise.',
+        cta_get_access: 'Get Early Access',
         pill_horus: 'AI Firewall',
         pill_anubis: 'Endpoint AI',
         pill_thoth: 'Threat Intel',
         pill_maat: 'Email Guard',
         pill_ra: 'SOC-as-a-Service',
-        countdown_label: 'Launching In',
-        countdown_live: '🚀 We Are Live!',
+        countdown_badge: 'COUNTDOWN TO LAUNCH',
+        countdown_date_prefix: 'Launch Date: ',
         cd_days: 'Days',
         cd_hours: 'Hours',
         cd_min: 'Minutes',
         cd_sec: 'Seconds',
-        signup_label: 'Get early access. Be the first to know.',
+        countdown_live: 'We Are Live',
+        signup_title: 'Be First In Line',
+        signup_label: 'Join the waiting list for early access and exclusive launch pricing.',
         email_placeholder: 'Enter your email address',
         cta_btn: 'Notify Me',
-        signup_success: '✅ You\'re on the list! We\'ll notify you at launch.',
+        signup_success: 'You\'re on the list. We\'ll notify you at launch.',
         ticker_label: 'LIVE THREAT FEED',
         stat_monitoring: 'AI Monitoring',
         stat_response: 'Threat Response',
         stat_detection: 'Detection Rate',
         stat_api: 'External APIs',
         features_title: 'What\'s Coming',
+        features_subtitle: 'A complete cybersecurity ecosystem purpose-built for the Egyptian market.',
         feat_ai_t: 'Local AI Detection',
-        feat_ai_d: 'On-premise AI engine that detects threats in real-time — no external API calls, no data leaves your network.',
+        feat_ai_d: 'On-premise AI engine that detects threats in real-time. No external API calls. No data leaves your network.',
         feat_inv_t: 'Auto Investigation',
-        feat_inv_d: 'When an attack hits, our AI automatically investigates — identifies source, timeline, affected devices, and isolates threats.',
+        feat_inv_d: 'When an attack hits, our AI automatically investigates. Identifies source, timeline, affected devices, and isolates threats.',
         feat_col_t: 'Collective Intelligence',
         feat_col_d: 'Every client\'s detection strengthens the network. A threat found once is blocked everywhere — instantly.',
         feat_comp_t: 'PDPL & ISO 27001',
-        feat_comp_d: 'Built-in compliance engine for Egypt\'s PDPL, ISO 27001, and PCI-DSS — automated reports in Arabic & English.',
+        feat_comp_d: 'Built-in compliance engine for Egypt\'s PDPL, ISO 27001, and PCI-DSS. Automated reports in Arabic & English.',
         feat_dark_t: 'Dark Web Monitoring',
-        feat_dark_d: 'AI crawls the dark web 24/7 — detecting leaked credentials, brand impersonation, and threat actor activity.',
+        feat_dark_d: 'AI crawls the dark web 24/7. Detecting leaked credentials, brand impersonation, and threat actor activity.',
         feat_dep_t: '25-Minute Deployment',
-        feat_dep_d: 'Download the OVF, plug it in as a network bridge, enter your license key — full protection in under 25 minutes.',
+        feat_dep_d: 'Download the OVF, plug it in as a network bridge, enter your license key. Full protection in under 25 minutes.',
         footer_tagline: 'Egypt\'s First AI-Native Cybersecurity Company',
         footer_rights: 'All rights reserved.',
         lang_toggle: 'العربية',
@@ -72,41 +85,45 @@ const i18n = {
         ]
     },
     ar: {
-        nav_status: 'جارٍ تهيئة الأنظمة',
-        hero_desc: 'أول منظومة <strong>أمن سيبراني بالذكاء الاصطناعي</strong> في مصر.<br>حماية استباقية. تحقيق تلقائي. بدون تنازل.',
+        nav_status: 'الأنظمة متصلة',
+        hero_desc: 'أول منظومة <strong>أمن سيبراني بالذكاء الاصطناعي</strong> في مصر. حماية استباقية. تحقيق تلقائي. بدون تنازل.',
+        cta_get_access: 'احصل على وصول مبكر',
         pill_horus: 'جدار ناري ذكي',
         pill_anubis: 'حماية الأجهزة',
         pill_thoth: 'استخبارات التهديدات',
         pill_maat: 'حماية البريد',
         pill_ra: 'مركز عمليات أمني',
-        countdown_label: 'الإطلاق بعد',
-        countdown_live: '🚀 نحن الآن مباشرون!',
+        countdown_badge: 'العد التنازلي للإطلاق',
+        countdown_date_prefix: 'تاريخ الإطلاق: ',
         cd_days: 'يوم',
         cd_hours: 'ساعة',
         cd_min: 'دقيقة',
         cd_sec: 'ثانية',
-        signup_label: 'احصل على وصول مبكر. كن أول من يعرف.',
+        countdown_live: 'نحن الآن مباشرون',
+        signup_title: 'كن أول المنتظرين',
+        signup_label: 'انضم لقائمة الانتظار للوصول المبكر وأسعار الإطلاق الحصرية.',
         email_placeholder: 'أدخل بريدك الإلكتروني',
         cta_btn: 'أبلغني',
-        signup_success: '✅ تمت إضافتك! سنبلغك فور الإطلاق.',
-        ticker_label: 'LIVE THREAT FEED',
+        signup_success: 'تمت إضافتك للقائمة. سنبلغك فور الإطلاق.',
+        ticker_label: 'تغذية التهديدات المباشرة',
         stat_monitoring: 'مراقبة بالذكاء الاصطناعي',
         stat_response: 'سرعة الاستجابة',
         stat_detection: 'معدل الكشف',
         stat_api: 'واجهات خارجية',
         features_title: 'ما الذي سيأتي',
+        features_subtitle: 'منظومة أمن سيبراني متكاملة صُممت خصيصاً للسوق المصري.',
         feat_ai_t: 'كشف محلي بالذكاء الاصطناعي',
-        feat_ai_d: 'محرك ذكاء اصطناعي محلي يكتشف التهديدات لحظياً — بدون اتصال خارجي، بياناتك لا تغادر شبكتك أبداً.',
+        feat_ai_d: 'محرك ذكاء اصطناعي محلي يكتشف التهديدات لحظياً. بدون اتصال خارجي. بياناتك لا تغادر شبكتك أبداً.',
         feat_inv_t: 'تحقيق تلقائي',
-        feat_inv_d: 'عند حدوث هجوم، الذكاء الاصطناعي يحقق تلقائياً — يحدد المصدر، الجدول الزمني، الأجهزة المتأثرة، ويعزل التهديد.',
+        feat_inv_d: 'عند حدوث هجوم، الذكاء الاصطناعي يحقق تلقائياً. يحدد المصدر، الجدول الزمني، الأجهزة المتأثرة، ويعزل التهديد.',
         feat_col_t: 'ذكاء جماعي',
         feat_col_d: 'كل اكتشاف عند أي عميل يقوي الشبكة بأكملها. تهديد يُكتشف مرة واحدة يُحظر في كل مكان — فوراً.',
         feat_comp_t: 'PDPL و ISO 27001',
-        feat_comp_d: 'محرك امتثال مدمج لقانون حماية البيانات المصري، ISO 27001، و PCI-DSS — تقارير تلقائية بالعربية والإنجليزية.',
+        feat_comp_d: 'محرك امتثال مدمج لقانون حماية البيانات المصري، ISO 27001، و PCI-DSS. تقارير تلقائية بالعربية والإنجليزية.',
         feat_dark_t: 'مراقبة الدارك ويب',
-        feat_dark_d: 'الذكاء الاصطناعي يراقب الدارك ويب على مدار الساعة — يكشف تسريب بيانات الاعتماد وانتحال العلامة التجارية.',
+        feat_dark_d: 'الذكاء الاصطناعي يراقب الدارك ويب على مدار الساعة. يكشف تسريب بيانات الاعتماد وانتحال العلامة التجارية.',
         feat_dep_t: 'تشغيل في 25 دقيقة',
-        feat_dep_d: 'حمّل ملف الـ OVF، وصّله كجسر شبكة، أدخل مفتاح الترخيص — حماية كاملة في أقل من 25 دقيقة.',
+        feat_dep_d: 'حمّل ملف الـ OVF، وصّله كجسر شبكة، أدخل مفتاح الترخيص. حماية كاملة في أقل من 25 دقيقة.',
         footer_tagline: 'أول شركة أمن سيبراني بالذكاء الاصطناعي في مصر',
         footer_rights: 'جميع الحقوق محفوظة.',
         lang_toggle: 'English',
@@ -128,56 +145,113 @@ function setLang(lang) {
     const t = i18n[lang];
     const html = document.documentElement;
 
-    // Direction & lang attribute
     html.setAttribute('lang', lang === 'ar' ? 'ar' : 'en');
     html.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
 
-    // Update page title & meta
     document.title = lang === 'ar'
         ? 'beout.ai — أمن سيبراني بالذكاء الاصطناعي | قريباً'
         : 'beout.ai — AI-Powered Cybersecurity | Coming Soon';
+
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
         metaDesc.setAttribute('content', lang === 'ar'
-            ? 'beout.ai تبني أول منظومة أمن سيبراني متكاملة بالذكاء الاصطناعي في مصر. كشف تهديدات، تحقيق تلقائي، حماية استباقية.'
-            : 'beout.ai is building Egypt\'s first complete AI cybersecurity ecosystem. AI-powered threat detection, autonomous investigation, and predictive security.');
+            ? 'beout.ai تبني أول منظومة أمن سيبراني متكاملة بالذكاء الاصطناعي في مصر.'
+            : 'beout.ai is building Egypt\'s first complete AI cybersecurity ecosystem.');
     }
 
-    // Text content via data-i18n
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (t[key] !== undefined) {
-            el.innerHTML = t[key];
-        }
+        if (t[key] !== undefined) el.innerHTML = t[key];
     });
 
-    // Placeholders
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
         const key = el.getAttribute('data-i18n-placeholder');
         if (t[key] !== undefined) el.placeholder = t[key];
     });
 
-    // Toggle button text
     document.getElementById('lang-toggle-text').textContent = t.lang_toggle;
 
-    // Restart typing with new language taglines
+    // Update countdown date label
+    updateCountdownDateLabel();
+
     restartTyping();
 
-    // Save preference
     try { localStorage.setItem('beout_lang', lang); } catch(e) {}
 }
 
 function initLangToggle() {
-    const btn = document.getElementById('lang-toggle');
-    btn.addEventListener('click', () => {
+    document.getElementById('lang-toggle').addEventListener('click', () => {
         setLang(currentLang === 'en' ? 'ar' : 'en');
     });
-
-    // Restore saved language
     try {
         const saved = localStorage.getItem('beout_lang');
         if (saved === 'ar') setLang('ar');
     } catch(e) {}
+}
+
+/* ============================================
+   COUNTDOWN
+   ============================================ */
+let countdownInterval = null;
+
+function initCountdown() {
+    // ------------------------------------------
+    // LAUNCH DATE: Configure this to your real target date
+    // Format: YYYY-MM-DDTHH:MM:SS (local time)
+    // ------------------------------------------
+    const LAUNCH_DATE = '2026-09-01T00:00:00';
+
+    const launch = new Date(LAUNCH_DATE);
+    const cdDays = document.getElementById('cd-days');
+    const cdHours = document.getElementById('cd-hours');
+    const cdMin = document.getElementById('cd-min');
+    const cdSec = document.getElementById('cd-sec');
+    const badgeText = document.querySelector('.badge-text');
+    const badgeDot = document.querySelector('.badge-dot');
+
+    // Show the human-readable launch date below countdown
+    updateCountdownDateLabel();
+
+    function tick() {
+        const now = new Date();
+        const diff = launch - now;
+
+        if (diff <= 0) {
+            cdDays.textContent = '00';
+            cdHours.textContent = '00';
+            cdMin.textContent = '00';
+            cdSec.textContent = '00';
+            badgeText.textContent = i18n[currentLang].countdown_live;
+            badgeText.style.color = 'var(--green)';
+            badgeDot.style.background = 'var(--green)';
+            badgeDot.style.boxShadow = '0 0 8px rgba(0,230,118,0.5)';
+            return;
+        }
+
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+
+        cdDays.textContent = String(d).padStart(2, '0');
+        cdHours.textContent = String(h).padStart(2, '0');
+        cdMin.textContent = String(m).padStart(2, '0');
+        cdSec.textContent = String(s).padStart(2, '0');
+    }
+
+    tick();
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(tick, 1000);
+}
+
+function updateCountdownDateLabel() {
+    const el = document.getElementById('countdown-date');
+    if (!el) return;
+    const LAUNCH_DATE = new Date('2026-09-01T00:00:00');
+    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    const prefix = i18n[currentLang].countdown_date_prefix;
+    const locale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
+    el.textContent = prefix + LAUNCH_DATE.toLocaleDateString(locale, options) + ' UTC';
 }
 
 /* ============================================
@@ -203,10 +277,10 @@ function initTyping() {
             ci++;
             if (ci === txt.length) {
                 deleting = true;
-                typingTimeout = setTimeout(step, 2500);
+                typingTimeout = setTimeout(step, 2800);
                 return;
             }
-            typingTimeout = setTimeout(step, 55);
+            typingTimeout = setTimeout(step, 50);
         } else {
             el.textContent = txt.substring(0, ci - 1);
             ci--;
@@ -214,7 +288,7 @@ function initTyping() {
                 deleting = false;
                 pi = (pi + 1) % phrases.length;
             }
-            typingTimeout = setTimeout(step, 30);
+            typingTimeout = setTimeout(step, 28);
         }
     }
     step();
@@ -228,99 +302,81 @@ function initParticles() {
     const ctx = c.getContext('2d');
     let particles = [];
     let mouse = { x: null, y: null };
+    let animId;
 
     function resize() { c.width = window.innerWidth; c.height = window.innerHeight; }
     resize();
-    window.addEventListener('resize', resize);
-    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    window.addEventListener('resize', resize, { passive: true });
+    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
 
     class P {
         constructor() { this.reset(); }
         reset() {
             this.x = Math.random() * c.width;
             this.y = Math.random() * c.height;
-            this.s = Math.random() * 1.8 + 0.3;
-            this.vx = (Math.random() - 0.5) * 0.4;
-            this.vy = (Math.random() - 0.5) * 0.4;
-            this.o = Math.random() * 0.5 + 0.1;
+            this.s = Math.random() * 1.5 + 0.2;
+            this.vx = (Math.random() - 0.5) * 0.3;
+            this.vy = (Math.random() - 0.5) * 0.3;
+            this.o = Math.random() * 0.4 + 0.1;
         }
         update() {
             this.x += this.vx; this.y += this.vy;
             if (mouse.x !== null) {
                 const dx = mouse.x - this.x, dy = mouse.y - this.y;
-                const d = Math.sqrt(dx*dx + dy*dy);
-                if (d < 120) { this.x -= dx * 0.008; this.y -= dy * 0.008; }
+                const d2 = dx * dx + dy * dy;
+                if (d2 < 14400) { // 120^2
+                    const d = Math.sqrt(d2);
+                    this.x -= dx / d * 0.5;
+                    this.y -= dy / d * 0.5;
+                }
             }
             if (this.x < 0 || this.x > c.width) this.vx *= -1;
             if (this.y < 0 || this.y > c.height) this.vy *= -1;
         }
         draw() {
-            ctx.beginPath(); ctx.arc(this.x, this.y, this.s, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(0,229,255,${this.o})`; ctx.fill();
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.s, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0,229,255,${this.o})`;
+            ctx.fill();
         }
     }
 
-    const n = Math.min(80, Math.floor(window.innerWidth / 15));
+    const n = Math.min(60, Math.floor(window.innerWidth / 20));
     for (let i = 0; i < n; i++) particles.push(new P());
 
     function lines() {
-        for (let i = 0; i < particles.length; i++)
-            for (let j = i + 1; j < particles.length; j++) {
-                const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
-                const d = Math.sqrt(dx*dx + dy*dy);
-                if (d < 140) {
+        const len = particles.length;
+        for (let i = 0; i < len; i++) {
+            const pi = particles[i];
+            for (let j = i + 1; j < len; j++) {
+                const pj = particles[j];
+                const dx = pi.x - pj.x, dy = pi.y - pj.y;
+                const d2 = dx * dx + dy * dy;
+                if (d2 < 19600) { // 140^2
+                    const d = Math.sqrt(d2);
                     ctx.beginPath();
-                    ctx.moveTo(particles[i].x, particles[i].y);
-                    ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.strokeStyle = `rgba(0,229,255,${0.06 * (1 - d / 140)})`;
-                    ctx.lineWidth = 0.5; ctx.stroke();
+                    ctx.moveTo(pi.x, pi.y);
+                    ctx.lineTo(pj.x, pj.y);
+                    ctx.strokeStyle = `rgba(0,229,255,${0.05 * (1 - d / 140)})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
                 }
             }
+        }
     }
 
     (function animate() {
         ctx.clearRect(0, 0, c.width, c.height);
         particles.forEach(p => { p.update(); p.draw(); });
         lines();
-        requestAnimationFrame(animate);
+        animId = requestAnimationFrame(animate);
     })();
-}
 
-/* ============================================
-   COUNTDOWN
-   ============================================ */
-function initCountdown() {
-    // Fixed launch date: September 1, 2026 at 00:00 UTC
-    const launch = new Date('2026-09-01T00:00:00Z');
-    const cdDays = document.getElementById('cd-days');
-    const cdHours = document.getElementById('cd-hours');
-    const cdMin = document.getElementById('cd-min');
-    const cdSec = document.getElementById('cd-sec');
-    const countdownSection = document.getElementById('countdown-section');
-    const countdownLabel = countdownSection.querySelector('.countdown-label');
-
-    function tick() {
-        const diff = launch - new Date();
-        if (diff <= 0) {
-            cdDays.textContent = '00';
-            cdHours.textContent = '00';
-            cdMin.textContent = '00';
-            cdSec.textContent = '00';
-            countdownLabel.textContent = currentLang === 'ar' ? '🚀 نحن الآن مباشرون!' : '🚀 We Are Live!';
-            countdownLabel.style.color = 'var(--cyan)';
-            return;
-        }
-        const d = Math.floor(diff / 864e5);
-        const h = Math.floor((diff % 864e5) / 36e5);
-        const m = Math.floor((diff % 36e5) / 6e4);
-        const s = Math.floor((diff % 6e4) / 1e3);
-        cdDays.textContent = String(d).padStart(2, '0');
-        cdHours.textContent = String(h).padStart(2, '0');
-        cdMin.textContent = String(m).padStart(2, '0');
-        cdSec.textContent = String(s).padStart(2, '0');
-    }
-    tick();
-    setInterval(tick, 1000);
+    // Cleanup on page hide
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) cancelAnimationFrame(animId);
+        else animate();
+    });
 }
 
 /* ============================================
@@ -340,12 +396,15 @@ function initThreatTicker() {
         { ip: '171.25.193.xx', type: 'Credential Stuffing', action: 'BLOCKED' },
     ];
     const track = document.getElementById('ticker-track');
-    [...threats, ...threats].forEach(t => {
+    // Triple for seamless loop
+    [...threats, ...threats, ...threats].forEach(t => {
         const s = document.createElement('span');
         s.className = 'ticker-item';
-        s.innerHTML = `<span class="tt">${t.type}</span> from ${t.ip} — <span class="ta">${t.action}</span>`;
+        s.innerHTML = `<span class="tt">${t.type}</span> &middot; ${t.ip} &middot; <span class="ta">${t.action}</span>`;
         track.appendChild(s);
     });
+    // Slower scroll for triple content
+    track.style.animationDuration = '60s';
 }
 
 /* ============================================
@@ -360,7 +419,7 @@ function initScrollReveal() {
                 if (num) animateNum(num);
             }
         });
-    }, { threshold: 0.15 });
+    }, { threshold: 0.2 });
 
     document.querySelectorAll('.feature-card, .stat-card').forEach(el => {
         el.classList.add('reveal');
@@ -373,18 +432,14 @@ function animateNum(el) {
     el.dataset.done = '1';
     const target = parseInt(el.dataset.target);
     const start = performance.now();
-    const dur = 1500;
-    const card = el.closest('.stat-card');
+    const dur = 1800;
     (function step(now) {
         const p = Math.min((now - start) / dur, 1);
-        const ease = 1 - Math.pow(1 - p, 3);
-        el.textContent = Math.floor(target * ease);
-        if (p < 1) {
-            requestAnimationFrame(step);
-        } else {
-            el.textContent = target;
-            if (card) card.classList.add('counted');
-        }
+        const ease = 1 - Math.pow(1 - p, 4);
+        const val = Math.floor(target * ease);
+        el.textContent = val === 0 && target === 0 ? '0' : val;
+        if (p < 1) requestAnimationFrame(step);
+        else el.textContent = target;
     })(start);
 }
 
@@ -399,23 +454,21 @@ function initForm() {
     const inputWrapper = form.querySelector('.input-wrapper');
     let submitted = false;
 
-    // Remove any previous error
     function clearError() {
         const prev = inputWrapper.querySelector('.input-error');
         if (prev) prev.remove();
         emailInput.style.borderColor = '';
     }
 
-    // Show inline error
     function showError(msg) {
         clearError();
         const err = document.createElement('span');
         err.className = 'input-error';
         err.textContent = msg;
-        err.style.cssText = 'position:absolute;bottom:-20px;left:0;font-size:0.72rem;color:#ff5555;font-family:var(--font-mono);white-space:nowrap;';
+        err.style.cssText = 'position:absolute;bottom:-22px;left:0;font-size:0.7rem;color:var(--red);font-family:var(--font-mono);white-space:nowrap;';
         inputWrapper.style.position = 'relative';
         inputWrapper.appendChild(err);
-        emailInput.style.borderColor = '#ff5555';
+        emailInput.style.borderColor = 'var(--red)';
     }
 
     emailInput.addEventListener('input', clearError);
@@ -434,7 +487,6 @@ function initForm() {
             return;
         }
 
-        // Basic email validation
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             showError(currentLang === 'ar' ? 'بريد إلكتروني غير صالح' : 'Please enter a valid email');
             emailInput.focus();
@@ -442,24 +494,19 @@ function initForm() {
         }
 
         submitted = true;
-        const origText = btn.querySelector('.btn-text').textContent;
         btn.querySelector('.btn-text').textContent = currentLang === 'ar' ? 'جارٍ الإرسال...' : 'Sending...';
         btn.disabled = true;
 
-        // Simulate API call
         setTimeout(() => {
             form.style.display = 'none';
             success.classList.add('show');
-
-            // Store email preference (could be sent to a real backend)
             try {
                 localStorage.setItem('beout_email', email);
                 localStorage.setItem('beout_signed_up', '1');
             } catch(e) {}
-        }, 1200);
+        }, 1000);
     });
 
-    // If user already signed up, show success state on load
     try {
         if (localStorage.getItem('beout_signed_up') === '1') {
             form.style.display = 'none';
