@@ -12,6 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initLangToggle();
     // Typing starts after a short delay
     setTimeout(() => initTyping(), 1200);
+
+    // Fade in body
+    requestAnimationFrame(() => {
+        document.body.classList.add('loaded');
+    });
 });
 
 /* ============================================
@@ -27,6 +32,7 @@ const i18n = {
         pill_maat: 'Email Guard',
         pill_ra: 'SOC-as-a-Service',
         countdown_label: 'Launching In',
+        countdown_live: '🚀 We Are Live!',
         cd_days: 'Days',
         cd_hours: 'Hours',
         cd_min: 'Minutes',
@@ -74,6 +80,7 @@ const i18n = {
         pill_maat: 'حماية البريد',
         pill_ra: 'مركز عمليات أمني',
         countdown_label: 'الإطلاق بعد',
+        countdown_live: '🚀 نحن الآن مباشرون!',
         cd_days: 'يوم',
         cd_hours: 'ساعة',
         cd_min: 'دقيقة',
@@ -283,20 +290,34 @@ function initParticles() {
    COUNTDOWN
    ============================================ */
 function initCountdown() {
-    const launch = new Date();
-    launch.setDate(launch.getDate() + 90);
+    // Fixed launch date: September 1, 2026 at 00:00 UTC
+    const launch = new Date('2026-09-01T00:00:00Z');
+    const cdDays = document.getElementById('cd-days');
+    const cdHours = document.getElementById('cd-hours');
+    const cdMin = document.getElementById('cd-min');
+    const cdSec = document.getElementById('cd-sec');
+    const countdownSection = document.getElementById('countdown-section');
+    const countdownLabel = countdownSection.querySelector('.countdown-label');
 
     function tick() {
         const diff = launch - new Date();
-        if (diff <= 0) return;
+        if (diff <= 0) {
+            cdDays.textContent = '00';
+            cdHours.textContent = '00';
+            cdMin.textContent = '00';
+            cdSec.textContent = '00';
+            countdownLabel.textContent = currentLang === 'ar' ? '🚀 نحن الآن مباشرون!' : '🚀 We Are Live!';
+            countdownLabel.style.color = 'var(--cyan)';
+            return;
+        }
         const d = Math.floor(diff / 864e5);
         const h = Math.floor((diff % 864e5) / 36e5);
         const m = Math.floor((diff % 36e5) / 6e4);
         const s = Math.floor((diff % 6e4) / 1e3);
-        document.getElementById('cd-days').textContent = String(d).padStart(2, '0');
-        document.getElementById('cd-hours').textContent = String(h).padStart(2, '0');
-        document.getElementById('cd-min').textContent = String(m).padStart(2, '0');
-        document.getElementById('cd-sec').textContent = String(s).padStart(2, '0');
+        cdDays.textContent = String(d).padStart(2, '0');
+        cdHours.textContent = String(h).padStart(2, '0');
+        cdMin.textContent = String(m).padStart(2, '0');
+        cdSec.textContent = String(s).padStart(2, '0');
     }
     tick();
     setInterval(tick, 1000);
@@ -353,12 +374,17 @@ function animateNum(el) {
     const target = parseInt(el.dataset.target);
     const start = performance.now();
     const dur = 1500;
+    const card = el.closest('.stat-card');
     (function step(now) {
         const p = Math.min((now - start) / dur, 1);
         const ease = 1 - Math.pow(1 - p, 3);
         el.textContent = Math.floor(target * ease);
-        if (p < 1) requestAnimationFrame(step);
-        else el.textContent = target;
+        if (p < 1) {
+            requestAnimationFrame(step);
+        } else {
+            el.textContent = target;
+            if (card) card.classList.add('counted');
+        }
     })(start);
 }
 
@@ -367,17 +393,77 @@ function animateNum(el) {
    ============================================ */
 function initForm() {
     const form = document.getElementById('signup-form');
+    const emailInput = document.getElementById('email-input');
+    const btn = document.getElementById('cta-button');
+    const success = document.getElementById('signup-success');
+    const inputWrapper = form.querySelector('.input-wrapper');
+    let submitted = false;
+
+    // Remove any previous error
+    function clearError() {
+        const prev = inputWrapper.querySelector('.input-error');
+        if (prev) prev.remove();
+        emailInput.style.borderColor = '';
+    }
+
+    // Show inline error
+    function showError(msg) {
+        clearError();
+        const err = document.createElement('span');
+        err.className = 'input-error';
+        err.textContent = msg;
+        err.style.cssText = 'position:absolute;bottom:-20px;left:0;font-size:0.72rem;color:#ff5555;font-family:var(--font-mono);white-space:nowrap;';
+        inputWrapper.style.position = 'relative';
+        inputWrapper.appendChild(err);
+        emailInput.style.borderColor = '#ff5555';
+    }
+
+    emailInput.addEventListener('input', clearError);
+    emailInput.addEventListener('focus', clearError);
+
     form.addEventListener('submit', e => {
         e.preventDefault();
-        const btn = document.getElementById('cta-button');
-        const success = document.getElementById('signup-success');
+        if (submitted) return;
 
+        const email = emailInput.value.trim();
+        clearError();
+
+        if (!email) {
+            showError(currentLang === 'ar' ? 'يرجى إدخال بريد إلكتروني' : 'Please enter your email');
+            emailInput.focus();
+            return;
+        }
+
+        // Basic email validation
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showError(currentLang === 'ar' ? 'بريد إلكتروني غير صالح' : 'Please enter a valid email');
+            emailInput.focus();
+            return;
+        }
+
+        submitted = true;
+        const origText = btn.querySelector('.btn-text').textContent;
         btn.querySelector('.btn-text').textContent = currentLang === 'ar' ? 'جارٍ الإرسال...' : 'Sending...';
         btn.disabled = true;
 
+        // Simulate API call
         setTimeout(() => {
             form.style.display = 'none';
             success.classList.add('show');
-        }, 800);
+
+            // Store email preference (could be sent to a real backend)
+            try {
+                localStorage.setItem('beout_email', email);
+                localStorage.setItem('beout_signed_up', '1');
+            } catch(e) {}
+        }, 1200);
     });
+
+    // If user already signed up, show success state on load
+    try {
+        if (localStorage.getItem('beout_signed_up') === '1') {
+            form.style.display = 'none';
+            success.classList.add('show');
+        }
+    } catch(e) {}
 }
