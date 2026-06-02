@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initForm();
     initLangToggle();
     initNavbarScroll();
+    initHamburger();
+    initSmoothScroll();
     setTimeout(() => initTyping(), 1000);
     requestAnimationFrame(() => document.body.classList.add('loaded'));
 });
@@ -26,6 +28,57 @@ function initNavbarScroll() {
         navbar.classList.toggle('scrolled', y > 60);
         lastScroll = y;
     }, { passive: true });
+}
+
+/* ============================================
+   HAMBURGER MENU
+   ============================================ */
+function initHamburger() {
+    const btn = document.getElementById('nav-hamburger');
+    const links = document.getElementById('nav-links');
+    if (!btn || !links) return;
+    let isOpen = false;
+
+    function open() {
+        isOpen = true;
+        btn.classList.add('open');
+        links.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+        const firstLink = links.querySelector('a');
+        if (firstLink) firstLink.focus();
+    }
+
+    function close() {
+        isOpen = false;
+        btn.classList.remove('open');
+        links.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+    }
+
+    btn.addEventListener('click', () => isOpen ? close() : open());
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && isOpen) { close(); btn.focus(); } });
+    links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => close()));
+}
+
+/* ============================================
+   SMOOTH SCROLL
+   ============================================ */
+function initSmoothScroll() {
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', e => {
+            const href = a.getAttribute('href');
+            if (!href || href === '#') return;
+            const target = document.querySelector(href);
+            if (target) {
+                e.preventDefault();
+                const navH = document.querySelector('.navbar')?.offsetHeight || 0;
+                const top = target.getBoundingClientRect().top + window.scrollY - navH - 16;
+                window.scrollTo({ top, behavior: 'smooth' });
+            }
+        });
+    });
 }
 
 /* ============================================
@@ -75,6 +128,23 @@ const i18n = {
         footer_tagline: 'Egypt\'s First AI-Native Cybersecurity Company',
         footer_rights: 'All rights reserved.',
         lang_toggle: 'العربية',
+        skip_link: 'Skip to main content',
+        nav_features: 'Features',
+        nav_how: 'How It Works',
+        nav_signup: 'Sign Up',
+        signup_trust: 'No spam. Cancel anytime.',
+        how_title: 'Deploy in 25 Minutes',
+        how_subtitle: 'Three steps. Full AI protection.',
+        how_step1_t: 'Download OVF',
+        how_step1_d: 'Download the beout.ai virtual appliance. No complex setup. No vendor lock-in.',
+        how_step2_t: 'Deploy as Bridge',
+        how_step2_d: 'Plug it in as a network bridge and enter your license key. Works with any existing setup.',
+        how_step3_t: 'AI Protection Active',
+        how_step3_d: 'Autonomous threat detection & response goes live. Zero external APIs. 100% local AI.',
+        trust_label: 'Compliant with',
+        footer_product: 'Product',
+        footer_company: 'Company',
+        footer_location: 'Cairo, Egypt',
         taglines: [
             'AI Threat Detection & Response',
             'The Eye That Never Closes',
@@ -127,6 +197,23 @@ const i18n = {
         footer_tagline: 'أول شركة أمن سيبراني بالذكاء الاصطناعي في مصر',
         footer_rights: 'جميع الحقوق محفوظة.',
         lang_toggle: 'English',
+        skip_link: 'انتقل للمحتوى الرئيسي',
+        nav_features: 'المميزات',
+        nav_how: 'كيف يعمل',
+        nav_signup: 'سجّل',
+        signup_trust: 'بدون سبام. يمكنك الإلغاء في أي وقت.',
+        how_title: 'تشغيل في 25 دقيقة',
+        how_subtitle: 'ثلاث خطوات. حماية كاملة بالذكاء الاصطناعي.',
+        how_step1_t: 'حمّل ملف OVF',
+        how_step1_d: 'حمّل جهاز beout.ai الافتراضي. بدون إعداد معقد. بدون ارتباط بمورد معين.',
+        how_step2_t: 'وصّل كجسر شبكة',
+        how_step2_d: 'وصّله كجسر شبكة وأدخل مفتاح الترخيص. يعمل مع أي إعداد موجود.',
+        how_step3_t: 'الحماية الذكية تعمل',
+        how_step3_d: 'كشف التهديدات والاستجابة يعملان تلقائياً. بدون واجهات خارجية. ذكاء اصطناعي محلي 100%.',
+        trust_label: 'متوافق مع',
+        footer_product: 'المنتجات',
+        footer_company: 'الشركة',
+        footer_location: 'القاهرة، مصر',
         taglines: [
             'كشف التهديدات والاستجابة بالذكاء الاصطناعي',
             'العين التي لا تنام',
@@ -303,20 +390,26 @@ function initParticles() {
     let particles = [];
     let mouse = { x: null, y: null };
     let animId;
+    const dpr = window.devicePixelRatio || 1;
 
-    function resize() { c.width = window.innerWidth; c.height = window.innerHeight; }
+    function resize() {
+        c.width = window.innerWidth * dpr;
+        c.height = window.innerHeight * dpr;
+        c.style.width = window.innerWidth + 'px';
+        c.style.height = window.innerHeight + 'px';
+    }
     resize();
     window.addEventListener('resize', resize, { passive: true });
-    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
+    window.addEventListener('mousemove', e => { mouse.x = e.clientX * dpr; mouse.y = e.clientY * dpr; }, { passive: true });
 
     class P {
         constructor() { this.reset(); }
         reset() {
             this.x = Math.random() * c.width;
             this.y = Math.random() * c.height;
-            this.s = Math.random() * 1.5 + 0.2;
-            this.vx = (Math.random() - 0.5) * 0.3;
-            this.vy = (Math.random() - 0.5) * 0.3;
+            this.s = (Math.random() * 1.5 + 0.2) * dpr;
+            this.vx = (Math.random() - 0.5) * 0.3 * dpr;
+            this.vy = (Math.random() - 0.5) * 0.3 * dpr;
             this.o = Math.random() * 0.4 + 0.1;
         }
         update() {
@@ -324,10 +417,11 @@ function initParticles() {
             if (mouse.x !== null) {
                 const dx = mouse.x - this.x, dy = mouse.y - this.y;
                 const d2 = dx * dx + dy * dy;
-                if (d2 < 14400) { // 120^2
+                const repelR = 120 * dpr;
+                if (d2 < repelR * repelR) {
                     const d = Math.sqrt(d2);
-                    this.x -= dx / d * 0.5;
-                    this.y -= dy / d * 0.5;
+                    this.x -= dx / d * 0.5 * dpr;
+                    this.y -= dy / d * 0.5 * dpr;
                 }
             }
             if (this.x < 0 || this.x > c.width) this.vx *= -1;
@@ -341,9 +435,11 @@ function initParticles() {
         }
     }
 
-    const n = Math.min(60, Math.floor(window.innerWidth / 20));
+    const isMobile = window.innerWidth < 768;
+    const n = isMobile ? 30 : Math.min(60, Math.floor(window.innerWidth / 20));
     for (let i = 0; i < n; i++) particles.push(new P());
 
+    const lineDist = 140 * dpr;
     function lines() {
         const len = particles.length;
         for (let i = 0; i < len; i++) {
@@ -352,13 +448,13 @@ function initParticles() {
                 const pj = particles[j];
                 const dx = pi.x - pj.x, dy = pi.y - pj.y;
                 const d2 = dx * dx + dy * dy;
-                if (d2 < 19600) { // 140^2
+                if (d2 < lineDist * lineDist) {
                     const d = Math.sqrt(d2);
                     ctx.beginPath();
                     ctx.moveTo(pi.x, pi.y);
                     ctx.lineTo(pj.x, pj.y);
-                    ctx.strokeStyle = `rgba(0,229,255,${0.05 * (1 - d / 140)})`;
-                    ctx.lineWidth = 0.5;
+                    ctx.strokeStyle = `rgba(0,229,255,${0.05 * (1 - d / lineDist)})`;
+                    ctx.lineWidth = 0.5 * dpr;
                     ctx.stroke();
                 }
             }
@@ -366,7 +462,8 @@ function initParticles() {
     }
 
     (function animate() {
-        ctx.clearRect(0, 0, c.width, c.height);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, c.width / dpr, c.height / dpr);
         particles.forEach(p => { p.update(); p.draw(); });
         lines();
         animId = requestAnimationFrame(animate);
@@ -417,11 +514,15 @@ function initScrollReveal() {
                 e.target.classList.add('visible');
                 const num = e.target.querySelector('.stat-num');
                 if (num) animateNum(num);
+                // Stagger children within containers
+                e.target.querySelectorAll('.feature-card, .how-step').forEach((child, i) => {
+                    child.style.transitionDelay = `${i * 80}ms`;
+                });
             }
         });
-    }, { threshold: 0.2 });
+    }, { threshold: 0.15 });
 
-    document.querySelectorAll('.feature-card, .stat-card').forEach(el => {
+    document.querySelectorAll('.feature-card, .stat-card, .how-step').forEach(el => {
         el.classList.add('reveal');
         obs.observe(el);
     });
@@ -441,6 +542,33 @@ function animateNum(el) {
         if (p < 1) requestAnimationFrame(step);
         else el.textContent = target;
     })(start);
+}
+
+/* ============================================
+   CONFETTI
+   ============================================ */
+function fireConfetti() {
+    const colors = ['#00e5ff', '#7c4dff', '#00e676', '#2979ff'];
+    for (let i = 0; i < 40; i++) {
+        const dot = document.createElement('div');
+        const color = colors[i % colors.length];
+        dot.style.cssText = [
+            'position:fixed', 'width:6px', 'height:6px', 'border-radius:50%',
+            `background:${color}`,
+            'left:50%', 'top:55%', 'pointer-events:none', 'z-index:9999'
+        ].join(';');
+        document.body.appendChild(dot);
+        const angle = (Math.PI * 2 * i) / 40 - Math.PI / 2;
+        const velocity = 60 + Math.random() * 120;
+        const tx = Math.cos(angle) * velocity;
+        const ty = Math.sin(angle) * velocity - 40;
+        const dur = 600 + Math.random() * 300;
+        const anim = dot.animate([
+            { transform: 'translate3d(0,0,0) scale(1)', opacity: 1 },
+            { transform: `translate3d(${tx}px,${ty}px,0) scale(0)`, opacity: 0 }
+        ], { duration: dur, easing: 'cubic-bezier(0,.9,.57,1)', fill: 'forwards' });
+        anim.onfinish = () => dot.remove();
+    }
 }
 
 /* ============================================
@@ -500,6 +628,7 @@ function initForm() {
         setTimeout(() => {
             form.style.display = 'none';
             success.classList.add('show');
+            fireConfetti();
             try {
                 localStorage.setItem('beout_email', email);
                 localStorage.setItem('beout_signed_up', '1');
