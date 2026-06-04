@@ -1,22 +1,19 @@
 <?php
 /**
  * beout.ai — Real-Time Threat Feed Proxy
- * Fetches live attack data from Check Point ThreatCloud
+ * Fetches LIVE attack data from Check Point ThreatCloud
  * via their public ThreatMap SSE feed.
  *
- * Caches results for 2 minutes to avoid hammering the endpoint.
+ * Reads SSE stream for ~8 seconds, caches for 30 seconds.
  */
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
-header('Cache-Control: public, max-age=120');
+header('Cache-Control: public, max-age=30');
 
-// --- Configuration ---
+// --- Short cache so repeat requests are instant ---
 $cacheFile = __DIR__ . '/threat_cache.json';
-$cacheTTL  = 120; // 2 minutes
-
-// --- Serve from cache if fresh ---
-if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTTL) {
+if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 30) {
     readfile($cacheFile);
     exit;
 }
@@ -108,7 +105,7 @@ function fetchCheckPointFeed() {
     curl_setopt_array($ch, [
         CURLOPT_URL            => $url,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 12,
+        CURLOPT_TIMEOUT        => 8,
         CURLOPT_CONNECTTIMEOUT => 5,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_USERAGENT      => 'Mozilla/5.0 (compatible; beout.ai-ticker/2.0)',
@@ -128,7 +125,7 @@ function fetchCheckPointFeed() {
         return [];
     }
 
-    // Normalize line endings (\r\n → \n) then parse SSE events
+    // Normalize line endings then parse SSE events
     $response = str_replace("\r\n", "\n", $response);
     $response = str_replace("\r", "\n", $response);
 
@@ -160,19 +157,13 @@ function fetchCheckPointFeed() {
 // --- Main ---
 $rawAttacks = fetchCheckPointFeed();
 $threats = [];
-$seen = []; // Deduplicate by attack name + source country
 
+// Keep ALL live attacks — no deduplication, show every real event
 foreach ($rawAttacks as $attack) {
-    // Use country code (s_co), not state/region code (s_s) for source
     $srcCountry = $attack['s_co'] ?? '??';
     $dstCountry = $attack['d_co'] ?? '??';
-
-    $key = ($attack['a_n'] ?? '') . '_' . $srcCountry . '_' . $dstCountry;
-    if (isset($seen[$key])) continue;
-    $seen[$key] = true;
-
-    $srcName = $countryNames[$srcCountry] ?? $srcCountry;
-    $dstName = $countryNames[$dstCountry] ?? $dstCountry;
+    $srcName    = $countryNames[$srcCountry] ?? $srcCountry;
+    $dstName    = $countryNames[$dstCountry] ?? $dstCountry;
 
     $threats[] = [
         'type'       => $attack['a_n'] ?? 'Unknown Attack',
@@ -183,23 +174,21 @@ foreach ($rawAttacks as $attack) {
         'target'     => $dstName,
         'target_co'  => $dstCountry,
         'count'      => $attack['a_c'] ?? 1,
-        'feed'       => 'Check Point ThreatCloud',
+        'feed'       => 'ThreatCloud',
     ];
-
-    if (count($threats) >= 20) break;
 }
 
 $output = [
     'status'    => count($threats) > 0 ? 'ok' : 'empty',
     'count'     => count($threats),
     'updated'   => date('c'),
-    'source'    => 'Check Point ThreatCloud',
+    'source'    => 'Check Point ThreatCloud — LIVE',
     'threats'   => $threats,
 ];
 
 $json = json_encode($output, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
-// Save to cache
+// Cache for 30 seconds
 file_put_contents($cacheFile, $json);
 
 echo $json;

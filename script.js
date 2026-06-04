@@ -397,22 +397,26 @@ async function fetchLiveThreats() {
 }
 
 async function initThreatTicker() {
-    // Try live Check Point ThreatCloud feed first
+    // Show fallback immediately while first live fetch loads (~20s)
+    renderTicker(FALLBACK_THREATS);
+    console.log('[beout.ai] Showing fallback while loading live feed...');
+
+    // Fetch live data (takes ~20s because PHP reads the SSE stream)
     const liveThreats = await fetchLiveThreats();
 
     if (liveThreats) {
         renderTicker(liveThreats);
-        console.log(`[beout.ai] 🔴 Live threat feed: ${liveThreats.length} attacks from Check Point ThreatCloud`);
-    } else {
-        renderTicker(FALLBACK_THREATS);
-        console.log('[beout.ai] Using static threat data (fallback)');
+        console.log(`[beout.ai] 🔴 LIVE: ${liveThreats.length} real attacks from Check Point ThreatCloud`);
     }
 
-    // Refresh every 2 minutes
+    // Refresh with new live data every 30 seconds
     setInterval(async () => {
         const fresh = await fetchLiveThreats();
-        if (fresh) renderTicker(fresh);
-    }, 2 * 60 * 1000);
+        if (fresh && fresh.length > 0) {
+            renderTicker(fresh);
+            console.log(`[beout.ai] 🔄 Refreshed: ${fresh.length} live attacks`);
+        }
+    }, 30 * 1000);
 }
 
 /* ============================================
