@@ -316,24 +316,30 @@ function initCountdown() {
 }
 
 /* ============================================
-   THREAT TICKER — Real-Time Feed
+   THREAT TICKER — Real-Time Check Point ThreatCloud
    ============================================ */
 
-// Static fallback threats (used when API is unavailable)
+// Static fallback threats (used when live API is unavailable)
 const FALLBACK_THREATS = [
-    { ip: '185.220.101.xx', type: 'Brute Force SSH', action: 'BLOCKED' },
-    { ip: '45.155.205.xx', type: 'Ransomware C2', action: 'QUARANTINED' },
-    { ip: '194.26.135.xx', type: 'SQL Injection', action: 'BLOCKED' },
-    { ip: '89.248.163.xx', type: 'Port Scan', action: 'DETECTED' },
-    { ip: '162.142.125.xx', type: 'Phishing Link', action: 'BLOCKED' },
-    { ip: '198.235.24.xx', type: 'DDoS Attempt', action: 'MITIGATED' },
-    { ip: '91.219.237.xx', type: 'Malware Download', action: 'BLOCKED' },
-    { ip: '23.129.64.xx', type: 'Data Exfiltration', action: 'ISOLATED' },
-    { ip: '104.244.73.xx', type: 'Zero-Day Exploit', action: 'QUARANTINED' },
-    { ip: '171.25.193.xx', type: 'Credential Stuffing', action: 'BLOCKED' },
+    { type: 'HTTP Headers Remote Code Execution', source: 'Germany', target: 'Israel', action: 'BLOCKED', category: 'exploit' },
+    { type: 'EMC AlphaStor command injection', source: 'United States', target: 'United States', action: 'BLOCKED', category: 'exploit' },
+    { type: 'OpenSSL TLS Downgrade Attack', source: 'Canada', target: 'Russia', action: 'DETECTED', category: 'exploit' },
+    { type: 'Apache Log4j RCE (CVE-2021-44228)', source: 'China', target: 'Germany', action: 'QUARANTINED', category: 'exploit' },
+    { type: 'SQL Injection via Web Form', source: 'Brazil', target: 'France', action: 'BLOCKED', category: 'exploit' },
+    { type: 'Emotet Trojan Distribution', source: 'Ukraine', target: 'United Kingdom', action: 'QUARANTINED', category: 'malware' },
+    { type: 'Dridex Banking Trojan C2', source: 'Russia', target: 'Japan', action: 'ISOLATED', category: 'botnet' },
+    { type: 'WordPress Remote Code Execution', source: 'Netherlands', target: 'India', action: 'BLOCKED', category: 'exploit' },
+    { type: 'SSH Brute Force Attack', source: 'Vietnam', target: 'Singapore', action: 'BLOCKED', category: 'exploit' },
+    { type: 'DNS Amplification DDoS', source: 'South Korea', target: 'Australia', action: 'MITIGATED', category: 'exploit' },
 ];
 
-function renderTicker(threats) {
+// Country code → flag emoji
+const countryFlag = (co) => {
+    if (!co || co.length !== 2) return '🌐';
+    return String.fromCodePoint(...[...co.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+};
+
+function renderTicker(threats, isLive = false) {
     const track = document.getElementById('ticker-track');
     track.innerHTML = '';
 
@@ -348,14 +354,19 @@ function renderTicker(threats) {
             'ISOLATED': 'ta-isolated',
             'DETECTED': 'ta-detected',
             'MITIGATED': 'ta-mitigated',
-            'TAKEN DOWN': 'ta-blocked',
         }[t.action] || '';
 
-        const sourceTag = t.source
-            ? `<span class="ts">${t.source}</span> `
+        const categoryTag = t.category
+            ? `<span class="ts">${t.category.toUpperCase()}</span>`
             : '';
 
-        s.innerHTML = `${sourceTag}<span class="tt">${t.type}</span> from ${t.ip} — <span class="ta ${actionClass}">${t.action}</span>`;
+        // Show source → target country with flags
+        const srcFlag = t.source_co ? countryFlag(t.source_co) : '';
+        const dstFlag = t.target_co ? countryFlag(t.target_co) : '';
+        const srcLabel = t.source || 'Unknown';
+        const dstLabel = t.target || 'Unknown';
+
+        s.innerHTML = `${categoryTag}<span class="tt">${t.type}</span> ${srcFlag} ${srcLabel} → ${dstFlag} ${dstLabel} — <span class="ta ${actionClass}">${t.action}</span>`;
         track.appendChild(s);
     });
 }
@@ -375,22 +386,22 @@ async function fetchLiveThreats() {
 }
 
 async function initThreatTicker() {
-    // Try live feed first
+    // Try live Check Point ThreatCloud feed first
     const liveThreats = await fetchLiveThreats();
 
     if (liveThreats) {
-        renderTicker(liveThreats);
-        console.log(`[beout.ai] 🔴 Live threat feed loaded: ${liveThreats.length} threats from abuse.ch`);
+        renderTicker(liveThreats, true);
+        console.log(`[beout.ai] 🔴 Live threat feed: ${liveThreats.length} attacks from Check Point ThreatCloud`);
     } else {
-        renderTicker(FALLBACK_THREATS);
+        renderTicker(FALLBACK_THREATS, false);
         console.log('[beout.ai] Using static threat data (fallback)');
     }
 
-    // Refresh live data every 5 minutes
+    // Refresh every 2 minutes
     setInterval(async () => {
         const fresh = await fetchLiveThreats();
-        if (fresh) renderTicker(fresh);
-    }, 5 * 60 * 1000);
+        if (fresh) renderTicker(fresh, true);
+    }, 2 * 60 * 1000);
 }
 
 /* ============================================

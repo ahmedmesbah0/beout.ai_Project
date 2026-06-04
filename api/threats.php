@@ -1,19 +1,19 @@
 <?php
 /**
  * beout.ai — Real-Time Threat Feed Proxy
- * Fetches live threat data from abuse.ch public feeds
- * and returns it as JSON for the frontend ticker.
+ * Fetches live attack data from Check Point ThreatCloud
+ * via their public ThreatMap SSE feed.
  *
- * Caches results for 5 minutes to respect fair-use policies.
+ * Caches results for 2 minutes to avoid hammering the endpoint.
  */
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Cache-Control: public, max-age=300');
+header('Cache-Control: public, max-age=120');
 
 // --- Configuration ---
 $cacheFile = __DIR__ . '/threat_cache.json';
-$cacheTTL  = 300; // 5 minutes
+$cacheTTL  = 120; // 2 minutes
 
 // --- Serve from cache if fresh ---
 if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTTL) {
@@ -21,64 +21,103 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTTL) {
     exit;
 }
 
-// --- Threat type mapping based on URL patterns ---
-function classifyThreat($url, $tags) {
-    $tagsLower = strtolower(implode(' ', $tags));
-    $urlLower  = strtolower($url);
+// --- Country code to name mapping ---
+$countryNames = [
+    'AF' => 'Afghanistan', 'AL' => 'Albania', 'DZ' => 'Algeria', 'AS' => 'American Samoa',
+    'AD' => 'Andorra', 'AO' => 'Angola', 'AI' => 'Anguilla', 'AQ' => 'Antarctica',
+    'AG' => 'Antigua & Barbuda', 'AR' => 'Argentina', 'AM' => 'Armenia', 'AW' => 'Aruba',
+    'AU' => 'Australia', 'AT' => 'Austria', 'AZ' => 'Azerbaijan', 'BS' => 'Bahamas',
+    'BH' => 'Bahrain', 'BD' => 'Bangladesh', 'BB' => 'Barbados', 'BY' => 'Belarus',
+    'BE' => 'Belgium', 'BZ' => 'Belize', 'BJ' => 'Benin', 'BM' => 'Bermuda',
+    'BT' => 'Bhutan', 'BO' => 'Bolivia', 'BA' => 'Bosnia & Herzegovina', 'BW' => 'Botswana',
+    'BR' => 'Brazil', 'BN' => 'Brunei', 'BG' => 'Bulgaria', 'BF' => 'Burkina Faso',
+    'BI' => 'Burundi', 'KH' => 'Cambodia', 'CM' => 'Cameroon', 'CA' => 'Canada',
+    'CV' => 'Cape Verde', 'KY' => 'Cayman Islands', 'CF' => 'Central African Republic',
+    'TD' => 'Chad', 'CL' => 'Chile', 'CN' => 'China', 'CO' => 'Colombia',
+    'KM' => 'Comoros', 'CG' => 'Congo', 'CD' => 'DR Congo', 'CK' => 'Cook Islands',
+    'CR' => 'Costa Rica', 'CI' => 'Côte d\'Ivoire', 'HR' => 'Croatia', 'CU' => 'Cuba',
+    'CW' => 'Curaçao', 'CY' => 'Cyprus', 'CZ' => 'Czech Republic', 'DK' => 'Denmark',
+    'DJ' => 'Djibouti', 'DM' => 'Dominica', 'DO' => 'Dominican Republic', 'EC' => 'Ecuador',
+    'EG' => 'Egypt', 'SV' => 'El Salvador', 'GQ' => 'Equatorial Guinea', 'ER' => 'Eritrea',
+    'EE' => 'Estonia', 'SZ' => 'Eswatini', 'ET' => 'Ethiopia', 'FK' => 'Falkland Islands',
+    'FO' => 'Faroe Islands', 'FJ' => 'Fiji', 'FI' => 'Finland', 'FR' => 'France',
+    'GF' => 'French Guiana', 'PF' => 'French Polynesia', 'GA' => 'Gabon', 'GM' => 'Gambia',
+    'GE' => 'Georgia', 'DE' => 'Germany', 'GH' => 'Ghana', 'GI' => 'Gibraltar',
+    'GR' => 'Greece', 'GL' => 'Greenland', 'GD' => 'Grenada', 'GP' => 'Guadeloupe',
+    'GU' => 'Guam', 'GT' => 'Guatemala', 'GG' => 'Guernsey', 'GN' => 'Guinea',
+    'GW' => 'Guinea-Bissau', 'GY' => 'Guyana', 'HT' => 'Haiti', 'HN' => 'Honduras',
+    'HK' => 'Hong Kong', 'HU' => 'Hungary', 'IS' => 'Iceland', 'IN' => 'India',
+    'ID' => 'Indonesia', 'IR' => 'Iran', 'IQ' => 'Iraq', 'IE' => 'Ireland',
+    'IM' => 'Isle of Man', 'IL' => 'Israel', 'IT' => 'Italy', 'JM' => 'Jamaica',
+    'JP' => 'Japan', 'JE' => 'Jersey', 'JO' => 'Jordan', 'KZ' => 'Kazakhstan',
+    'KE' => 'Kenya', 'KI' => 'Kiribati', 'KP' => 'North Korea', 'KR' => 'South Korea',
+    'KW' => 'Kuwait', 'KG' => 'Kyrgyzstan', 'LA' => 'Laos', 'LV' => 'Latvia',
+    'LB' => 'Lebanon', 'LS' => 'Lesotho', 'LR' => 'Liberia', 'LY' => 'Libya',
+    'LI' => 'Liechtenstein', 'LT' => 'Lithuania', 'LU' => 'Luxembourg', 'MO' => 'Macau',
+    'MG' => 'Madagascar', 'MW' => 'Malawi', 'MY' => 'Malaysia', 'MV' => 'Maldives',
+    'ML' => 'Mali', 'MT' => 'Malta', 'MH' => 'Marshall Islands', 'MQ' => 'Martinique',
+    'MR' => 'Mauritania', 'MU' => 'Mauritius', 'YT' => 'Mayotte', 'MX' => 'Mexico',
+    'FM' => 'Micronesia', 'MD' => 'Moldova', 'MC' => 'Monaco', 'MN' => 'Mongolia',
+    'ME' => 'Montenegro', 'MS' => 'Montserrat', 'MA' => 'Morocco', 'MZ' => 'Mozambique',
+    'MM' => 'Myanmar', 'NA' => 'Namibia', 'NR' => 'Nauru', 'NP' => 'Nepal',
+    'NL' => 'Netherlands', 'NC' => 'New Caledonia', 'NZ' => 'New Zealand', 'NI' => 'Nicaragua',
+    'NE' => 'Niger', 'NG' => 'Nigeria', 'NU' => 'Niue', 'NF' => 'Norfolk Island',
+    'MK' => 'North Macedonia', 'MP' => 'Northern Mariana Islands', 'NO' => 'Norway',
+    'OM' => 'Oman', 'PK' => 'Pakistan', 'PW' => 'Palau', 'PS' => 'Palestine',
+    'PA' => 'Panama', 'PG' => 'Papua New Guinea', 'PY' => 'Paraguay', 'PE' => 'Peru',
+    'PH' => 'Philippines', 'PL' => 'Poland', 'PT' => 'Portugal', 'PR' => 'Puerto Rico',
+    'QA' => 'Qatar', 'RE' => 'Réunion', 'RO' => 'Romania', 'RU' => 'Russia',
+    'RW' => 'Rwanda', 'BL' => 'Saint Barthélemy', 'SH' => 'Saint Helena',
+    'KN' => 'Saint Kitts & Nevis', 'LC' => 'Saint Lucia', 'MF' => 'Saint Martin',
+    'PM' => 'Saint Pierre & Miquelon', 'VC' => 'Saint Vincent & Grenadines',
+    'WS' => 'Samoa', 'SM' => 'San Marino', 'ST' => 'São Tomé & Príncipe',
+    'SA' => 'Saudi Arabia', 'SN' => 'Senegal', 'RS' => 'Serbia', 'SC' => 'Seychelles',
+    'SL' => 'Sierra Leone', 'SG' => 'Singapore', 'SX' => 'Sint Maarten', 'SK' => 'Slovakia',
+    'SI' => 'Slovenia', 'SB' => 'Solomon Islands', 'SO' => 'Somalia', 'ZA' => 'South Africa',
+    'SS' => 'South Sudan', 'ES' => 'Spain', 'LK' => 'Sri Lanka', 'SD' => 'Sudan',
+    'SR' => 'Suriname', 'SE' => 'Sweden', 'CH' => 'Switzerland', 'SY' => 'Syria',
+    'TW' => 'Taiwan', 'TJ' => 'Tajikistan', 'TZ' => 'Tanzania', 'TH' => 'Thailand',
+    'TL' => 'Timor-Leste', 'TG' => 'Togo', 'TK' => 'Tokelau', 'TO' => 'Tonga',
+    'TT' => 'Trinidad & Tobago', 'TN' => 'Tunisia', 'TR' => 'Turkey', 'TM' => 'Turkmenistan',
+    'TC' => 'Turks & Caicos', 'TV' => 'Tuvalu', 'UG' => 'Uganda', 'UA' => 'Ukraine',
+    'AE' => 'UAE', 'GB' => 'United Kingdom', 'US' => 'United States', 'UY' => 'Uruguay',
+    'UZ' => 'Uzbekistan', 'VU' => 'Vanuatu', 'VA' => 'Vatican City', 'VE' => 'Venezuela',
+    'VN' => 'Vietnam', 'VG' => 'British Virgin Islands', 'VI' => 'U.S. Virgin Islands',
+    'WF' => 'Wallis & Futuna', 'EH' => 'Western Sahara', 'YE' => 'Yemen', 'ZM' => 'Zambia',
+    'ZW' => 'Zimbabwe', 'XK' => 'Kosovo',
+    // Check Point regional/state codes
+    'HE' => 'Hesse (DE)', 'Z' => 'Central (IL)',
+];
 
-    if (strpos($tagsLower, 'ransomware') !== false) return 'Ransomware C2';
-    if (strpos($tagsLower, 'emotet') !== false)     return 'Emotet Malware';
-    if (strpos($tagsLower, 'qakbot') !== false)     return 'QakBot Trojan';
-    if (strpos($tagsLower, 'cobalt') !== false)     return 'Cobalt Strike Beacon';
-    if (strpos($tagsLower, 'phish') !== false)       return 'Phishing Attack';
-    if (strpos($tagsLower, 'stealer') !== false)     return 'Info Stealer';
-    if (strpos($tagsLower, 'loader') !== false)      return 'Malware Loader';
-    if (strpos($tagsLower, 'rat') !== false)         return 'Remote Access Trojan';
-    if (strpos($tagsLower, 'miner') !== false)       return 'Crypto Miner';
-    if (strpos($tagsLower, 'botnet') !== false)      return 'Botnet Activity';
-    if (strpos($urlLower, '.exe') !== false)          return 'Malware Download';
-    if (strpos($urlLower, '.dll') !== false)          return 'DLL Injection';
-    if (strpos($urlLower, '.doc') !== false)          return 'Malicious Document';
-    if (strpos($urlLower, 'login') !== false)         return 'Credential Phishing';
-    if (strpos($urlLower, 'wp-') !== false)           return 'CMS Exploit';
-
-    return 'Malicious URL';
-}
-
-// --- Action mapping ---
-function getAction($status) {
+// --- Map attack type to action ---
+function mapAction($type) {
     $map = [
-        'online'         => 'BLOCKED',
-        'offline'        => 'TAKEN DOWN',
-        'unknown'        => 'DETECTED',
+        'exploit'  => 'BLOCKED',
+        'malware'  => 'QUARANTINED',
+        'botnet'   => 'ISOLATED',
+        'spam'     => 'BLOCKED',
+        'phishing' => 'BLOCKED',
+        'apt'      => 'QUARANTINED',
     ];
-    return $map[strtolower($status)] ?? 'BLOCKED';
+    return $map[strtolower($type)] ?? 'DETECTED';
 }
 
-// --- Mask IP for display ---
-function maskIp($host) {
-    // Extract IP if it's an IP-based URL
-    if (filter_var($host, FILTER_VALIDATE_IP)) {
-        $parts = explode('.', $host);
-        if (count($parts) === 4) {
-            return $parts[0] . '.' . $parts[1] . '.' . $parts[2] . '.xx';
-        }
-    }
-    // For domain-based hosts, just return a truncated version
-    return $host;
-}
-
-// --- Fetch from URLhaus recent URLs (JSON) ---
-function fetchURLhaus() {
-    $url = 'https://urlhaus-api.abuse.ch/v1/urls/recent/limit/25/';
+// --- Fetch from Check Point ThreatMap SSE ---
+function fetchCheckPointFeed() {
+    $url = 'https://threatmap-api.checkpoint.com/ThreatMap/api/feed';
 
     $ch = curl_init();
     curl_setopt_array($ch, [
         CURLOPT_URL            => $url,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_TIMEOUT        => 12,        // Read for 12 seconds then stop
+        CURLOPT_CONNECTTIMEOUT => 5,
         CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_USERAGENT      => 'beout.ai-threat-ticker/1.0',
+        CURLOPT_USERAGENT      => 'Mozilla/5.0 (compatible; beout.ai-ticker/2.0)',
+        CURLOPT_HTTPHEADER     => [
+            'Accept: text/event-stream',
+            'Cache-Control: no-cache',
+        ],
     ]);
 
     $response = curl_exec($ch);
@@ -87,95 +126,73 @@ function fetchURLhaus() {
 
     if ($httpCode !== 200 || !$response) return [];
 
-    $data = json_decode($response, true);
-    if (!$data || !isset($data['urls'])) return [];
-
-    $threats = [];
-    foreach (array_slice($data['urls'], 0, 15) as $entry) {
-        $host = parse_url($entry['url'] ?? '', PHP_URL_HOST) ?: 'unknown';
-        $tags = $entry['tags'] ?? [];
-        $status = $entry['url_status'] ?? 'online';
-        $dateAdded = $entry['date_added'] ?? '';
-
-        $threats[] = [
-            'ip'        => maskIp($host),
-            'type'      => classifyThreat($entry['url'] ?? '', $tags),
-            'action'    => getAction($status),
-            'source'    => 'URLhaus',
-            'timestamp' => $dateAdded,
-            'country'   => $entry['country'] ?? null,
-        ];
-    }
-
-    return $threats;
-}
-
-// --- Fetch from Feodo Tracker (botnet C2 IPs) ---
-function fetchFeodo() {
-    $url = 'https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.txt';
-
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL            => $url,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 10,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_USERAGENT      => 'beout.ai-threat-ticker/1.0',
-    ]);
-
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
-    if ($httpCode !== 200 || !$response) return [];
-
+    // Parse SSE events
+    $attacks = [];
     $lines = explode("\n", $response);
-    $threats = [];
-    $botnetTypes = ['Dridex C2', 'TrickBot C2', 'QakBot C2', 'BazarLoader C2', 'Botnet C2'];
-    $actions = ['BLOCKED', 'QUARANTINED', 'ISOLATED'];
+    $currentEvent = null;
+    $currentData  = null;
 
     foreach ($lines as $line) {
         $line = trim($line);
-        if (empty($line) || $line[0] === '#') continue;
 
-        if (filter_var($line, FILTER_VALIDATE_IP)) {
-            $threats[] = [
-                'ip'        => maskIp($line),
-                'type'      => $botnetTypes[array_rand($botnetTypes)],
-                'action'    => $actions[array_rand($actions)],
-                'source'    => 'Feodo Tracker',
-                'timestamp' => date('Y-m-d H:i:s'),
-                'country'   => null,
-            ];
+        if (strpos($line, 'event:') === 0) {
+            $currentEvent = trim(substr($line, 6));
+        } elseif (strpos($line, 'data:') === 0) {
+            $currentData = trim(substr($line, 5));
+        } elseif ($line === '' && $currentEvent === 'attack' && $currentData) {
+            $data = json_decode($currentData, true);
+            if ($data && isset($data['a_n'])) {
+                $attacks[] = $data;
+            }
+            $currentEvent = null;
+            $currentData  = null;
         }
-
-        if (count($threats) >= 10) break;
     }
 
-    return $threats;
+    return $attacks;
 }
 
-// --- Main: Aggregate threats ---
-$urlhausThreats = fetchURLhaus();
-$feodoThreats   = fetchFeodo();
+// --- Main ---
+global $countryNames;
 
-$allThreats = array_merge($urlhausThreats, $feodoThreats);
+$rawAttacks = fetchCheckPointFeed();
+$threats = [];
+$seen = []; // Deduplicate by attack name + source country
 
-// Shuffle for variety
-shuffle($allThreats);
+foreach ($rawAttacks as $attack) {
+    $key = ($attack['a_n'] ?? '') . '_' . ($attack['s_co'] ?? '');
+    if (isset($seen[$key])) continue;
+    $seen[$key] = true;
 
-// Limit to 20 items
-$allThreats = array_slice($allThreats, 0, 20);
+    $srcCountry = $attack['s_co'] ?? '??';
+    $dstCountry = $attack['d_co'] ?? '??';
+    $srcName    = $countryNames[$srcCountry] ?? $srcCountry;
+    $dstName    = $countryNames[$dstCountry] ?? $dstCountry;
+
+    $threats[] = [
+        'type'       => $attack['a_n'] ?? 'Unknown Attack',
+        'category'   => $attack['a_t'] ?? 'exploit',
+        'action'     => mapAction($attack['a_t'] ?? ''),
+        'source'     => $srcName,
+        'source_co'  => $srcCountry,
+        'target'     => $dstName,
+        'target_co'  => $dstCountry,
+        'count'      => $attack['a_c'] ?? 1,
+        'feed'       => 'Check Point ThreatCloud',
+    ];
+
+    if (count($threats) >= 20) break;
+}
 
 $output = [
-    'status'    => 'ok',
-    'count'     => count($allThreats),
+    'status'    => count($threats) > 0 ? 'ok' : 'empty',
+    'count'     => count($threats),
     'updated'   => date('c'),
-    'sources'   => ['URLhaus (abuse.ch)', 'Feodo Tracker (abuse.ch)'],
-    'threats'   => $allThreats,
+    'source'    => 'Check Point ThreatCloud',
+    'threats'   => $threats,
 ];
 
-$json = json_encode($output, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+$json = json_encode($output, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
 // Save to cache
 file_put_contents($cacheFile, $json);
