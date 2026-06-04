@@ -122,7 +122,7 @@ function fetchCheckPointFeed() {
 
     if ($httpCode !== 200 || !$response) {
         error_log("[beout.ai] Check Point feed error: HTTP $httpCode - $curlError");
-        return [];
+        return ['attacks' => [], 'today' => 0];
     }
 
     // Normalize line endings then parse SSE events
@@ -130,6 +130,7 @@ function fetchCheckPointFeed() {
     $response = str_replace("\r", "\n", $response);
 
     $attacks = [];
+    $todayCount = 0;
     $lines = explode("\n", $response);
     $currentEvent = null;
     $currentData  = null;
@@ -148,23 +149,45 @@ function fetchCheckPointFeed() {
             }
             $currentEvent = null;
             $currentData  = null;
+        } elseif ($line === '' && $currentEvent === 'counter' && $currentData) {
+            // Parse global counter
+            $cData = json_decode($currentData, true);
+            if ($cData && isset($cData['today'])) {
+                $todayCount = $cData['today'];
+            }
+            $currentEvent = null;
+            $currentData  = null;
         }
     }
 
-    return $attacks;
+    return ['attacks' => $attacks, 'today' => $todayCount];
 }
 
 // --- Main ---
-$rawAttacks = fetchCheckPointFeed();
+$result = fetchCheckPointFeed();
+$rawAttacks = $result['attacks'];
+$todayGlobal = $result['today'];
 $threats = [];
+$seen = [];
 
-// Keep ALL live attacks — no deduplication, show every real event
+// Deduplicate: same attack name + same source→target = 1 entry
+// But accumulate the hit count
 foreach ($rawAttacks as $attack) {
     $srcCountry = $attack['s_co'] ?? '??';
     $dstCountry = $attack['d_co'] ?? '??';
-    $srcName    = $countryNames[$srcCountry] ?? $srcCountry;
-    $dstName    = $countryNames[$dstCountry] ?? $dstCountry;
 
+    $key = ($attack['a_n'] ?? '') . '|' . $srcCountry . '|' . $dstCountry;
+
+    if (isset($seen[$key])) {
+        // Add to the existing entry's count
+        $threats[$seen[$key]]['count'] += ($attack['a_c'] ?? 1);
+        continue;
+    }
+
+    $srcName = $countryNames[$srcCountry] ?? $srcCountry;
+    $dstName = $countryNames[$dstCountry] ?? $dstCountry;
+
+    $seen[$key] = count($threats);
     $threats[] = [
         'type'       => $attack['a_n'] ?? 'Unknown Attack',
         'category'   => $attack['a_t'] ?? 'exploit',
@@ -179,11 +202,12 @@ foreach ($rawAttacks as $attack) {
 }
 
 $output = [
-    'status'    => count($threats) > 0 ? 'ok' : 'empty',
-    'count'     => count($threats),
-    'updated'   => date('c'),
-    'source'    => 'Check Point ThreatCloud — LIVE',
-    'threats'   => $threats,
+    'status'       => count($threats) > 0 ? 'ok' : 'empty',
+    'count'        => count($threats),
+    'today_global' => $todayGlobal,
+    'updated'      => date('c'),
+    'source'       => 'Check Point ThreatCloud — LIVE',
+    'threats'      => array_values($threats),
 ];
 
 $json = json_encode($output, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
