@@ -1,22 +1,17 @@
 <?php
 /**
- * beout.ai — Real-Time Threat Feed Proxy
+ * beout.ai — Real-Time Threat Feed Proxy (Fallback)
  * Fetches LIVE attack data from Check Point ThreatCloud
  * via their public ThreatMap SSE feed.
  *
- * Reads SSE stream for ~8 seconds, caches for 30 seconds.
+ * No caching — every request fetches fresh data.
  */
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
-header('Cache-Control: public, max-age=30');
-
-// --- Short cache so repeat requests are instant ---
-$cacheFile = __DIR__ . '/threat_cache.json';
-if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 30) {
-    readfile($cacheFile);
-    exit;
-}
+header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Pragma: no-cache');
+header('Expires: 0');
 
 // --- Country code to name mapping (full ISO 3166-1) ---
 $countryNames = [
@@ -211,8 +206,5 @@ $output = [
 ];
 
 $json = json_encode($output, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-// Cache for 30 seconds
-file_put_contents($cacheFile, $json);
 
 echo $json;

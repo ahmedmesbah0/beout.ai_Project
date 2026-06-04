@@ -140,8 +140,6 @@ function transformAttack($attack, $countryNames) {
 // Send initial connection event
 sendSSE('connected', ['status' => 'ok', 'message' => 'Live stream connected']);
 
-// Track seen attacks to avoid duplicates within this connection
-$seenKeys = [];
 $eventId = 0;
 $connectionStart = time();
 $maxDuration = 300; // Keep connection open for 5 minutes max, then browser reconnects
@@ -172,8 +170,8 @@ while (true) {
             'Accept: text/event-stream',
             'Cache-Control: no-cache',
         ],
-        // Use a write callback to process data as it arrives
-        CURLOPT_WRITEFUNCTION  => function($ch, $chunk) use (&$seenKeys, &$eventId, $countryNames) {
+        // Use a write callback to process data as it arrives — NO caching, NO dedup
+        CURLOPT_WRITEFUNCTION  => function($ch, $chunk) use (&$eventId, $countryNames) {
             static $buffer = '';
             $buffer .= $chunk;
             
@@ -199,28 +197,13 @@ while (true) {
                 if ($currentEvent === 'attack' && $currentData) {
                     $data = json_decode($currentData, true);
                     if ($data && isset($data['a_n'])) {
-                        $srcCountry = $data['s_co'] ?? '??';
-                        $dstCountry = $data['d_co'] ?? '??';
+                        $eventId++;
                         
-                        // Create a unique key — include a time component so 
-                        // the same attack pair can appear again after 60s
-                        $timeSlot = floor(time() / 60); // Changes every minute
-                        $key = ($data['a_n'] ?? '') . '|' . $srcCountry . '|' . $dstCountry . '|' . $timeSlot;
+                        $threat = transformAttack($data, $countryNames);
+                        $threat['id'] = $eventId;
                         
-                        if (!isset($seenKeys[$key])) {
-                            $seenKeys[$key] = true;
-                            $eventId++;
-                            
-                            $threat = transformAttack($data, $countryNames);
-                            $threat['id'] = $eventId;
-                            
-                            sendSSE('attack', $threat);
-                            
-                            // Prevent memory leak — trim seen keys when too many
-                            if (count($seenKeys) > 500) {
-                                $seenKeys = array_slice($seenKeys, -200, 200, true);
-                            }
-                        }
+                        // Stream every single attack — zero filtering
+                        sendSSE('attack', $threat);
                     }
                 } elseif ($currentEvent === 'counter' && $currentData) {
                     $cData = json_decode($currentData, true);
