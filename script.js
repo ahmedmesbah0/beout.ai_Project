@@ -283,8 +283,7 @@ function initParticles() {
    COUNTDOWN
    ============================================ */
 function initCountdown() {
-    const launch = new Date();
-    launch.setDate(launch.getDate() + 90);
+    const launch = new Date('2026-10-10T00:00:00');
 
     function tick() {
         const diff = launch - new Date();
