@@ -316,28 +316,81 @@ function initCountdown() {
 }
 
 /* ============================================
-   THREAT TICKER
+   THREAT TICKER — Real-Time Feed
    ============================================ */
-function initThreatTicker() {
-    const threats = [
-        { ip: '185.220.101.xx', type: 'Brute Force SSH', action: 'BLOCKED' },
-        { ip: '45.155.205.xx', type: 'Ransomware C2', action: 'QUARANTINED' },
-        { ip: '194.26.135.xx', type: 'SQL Injection', action: 'BLOCKED' },
-        { ip: '89.248.163.xx', type: 'Port Scan', action: 'DETECTED' },
-        { ip: '162.142.125.xx', type: 'Phishing Link', action: 'BLOCKED' },
-        { ip: '198.235.24.xx', type: 'DDoS Attempt', action: 'MITIGATED' },
-        { ip: '91.219.237.xx', type: 'Malware Download', action: 'BLOCKED' },
-        { ip: '23.129.64.xx', type: 'Data Exfiltration', action: 'ISOLATED' },
-        { ip: '104.244.73.xx', type: 'Zero-Day Exploit', action: 'QUARANTINED' },
-        { ip: '171.25.193.xx', type: 'Credential Stuffing', action: 'BLOCKED' },
-    ];
+
+// Static fallback threats (used when API is unavailable)
+const FALLBACK_THREATS = [
+    { ip: '185.220.101.xx', type: 'Brute Force SSH', action: 'BLOCKED' },
+    { ip: '45.155.205.xx', type: 'Ransomware C2', action: 'QUARANTINED' },
+    { ip: '194.26.135.xx', type: 'SQL Injection', action: 'BLOCKED' },
+    { ip: '89.248.163.xx', type: 'Port Scan', action: 'DETECTED' },
+    { ip: '162.142.125.xx', type: 'Phishing Link', action: 'BLOCKED' },
+    { ip: '198.235.24.xx', type: 'DDoS Attempt', action: 'MITIGATED' },
+    { ip: '91.219.237.xx', type: 'Malware Download', action: 'BLOCKED' },
+    { ip: '23.129.64.xx', type: 'Data Exfiltration', action: 'ISOLATED' },
+    { ip: '104.244.73.xx', type: 'Zero-Day Exploit', action: 'QUARANTINED' },
+    { ip: '171.25.193.xx', type: 'Credential Stuffing', action: 'BLOCKED' },
+];
+
+function renderTicker(threats) {
     const track = document.getElementById('ticker-track');
+    track.innerHTML = '';
+
+    // Duplicate for seamless scroll loop
     [...threats, ...threats].forEach(t => {
         const s = document.createElement('span');
         s.className = 'ticker-item';
-        s.innerHTML = `<span class="tt">${t.type}</span> from ${t.ip} — <span class="ta">${t.action}</span>`;
+
+        const actionClass = {
+            'BLOCKED': 'ta-blocked',
+            'QUARANTINED': 'ta-quarantined',
+            'ISOLATED': 'ta-isolated',
+            'DETECTED': 'ta-detected',
+            'MITIGATED': 'ta-mitigated',
+            'TAKEN DOWN': 'ta-blocked',
+        }[t.action] || '';
+
+        const sourceTag = t.source
+            ? `<span class="ts">${t.source}</span> `
+            : '';
+
+        s.innerHTML = `${sourceTag}<span class="tt">${t.type}</span> from ${t.ip} — <span class="ta ${actionClass}">${t.action}</span>`;
         track.appendChild(s);
     });
+}
+
+async function fetchLiveThreats() {
+    try {
+        const res = await fetch('/api/threats.php', { cache: 'no-cache' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.status === 'ok' && data.threats && data.threats.length > 0) {
+            return data.threats;
+        }
+    } catch (e) {
+        console.warn('[beout.ai] Live threat feed unavailable, using fallback:', e.message);
+    }
+    return null;
+}
+
+async function initThreatTicker() {
+    // Try live feed first
+    const liveThreats = await fetchLiveThreats();
+
+    if (liveThreats) {
+        renderTicker(liveThreats);
+        console.log(`[beout.ai] 🔴 Live threat feed loaded: ${liveThreats.length} threats from abuse.ch`);
+    } else {
+        renderTicker(FALLBACK_THREATS);
+        console.log('[beout.ai] Using static threat data (fallback)');
+    }
+
+    // Refresh live data every 5 minutes
+    setInterval(async () => {
+        const fresh = await fetchLiveThreats();
+        if (fresh) renderTicker(fresh);
+    }, 5 * 60 * 1000);
 }
 
 /* ============================================

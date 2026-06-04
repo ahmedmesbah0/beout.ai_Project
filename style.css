@@ -313,7 +313,24 @@ body {
 }
 .ticker-item { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); }
 .ticker-item .tt { color: var(--cyan-dim); font-weight: 500; }
-.ticker-item .ta { color: #4caf50; }
+.ticker-item .ta { color: #4caf50; font-weight: 600; }
+.ticker-item .ta-blocked { color: #4caf50; }
+.ticker-item .ta-quarantined { color: #ff9800; }
+.ticker-item .ta-isolated { color: #7c4dff; }
+.ticker-item .ta-detected { color: #fdd835; }
+.ticker-item .ta-mitigated { color: #00bcd4; }
+.ticker-item .ts {
+    display: inline-block;
+    padding: 1px 6px;
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.15);
+    border-radius: 4px;
+    font-size: 0.58rem;
+    color: var(--cyan-dim);
+    letter-spacing: 0.5px;
+    margin-right: 6px;
+    vertical-align: middle;
+}
 @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
 /* ===== Stats ===== */
