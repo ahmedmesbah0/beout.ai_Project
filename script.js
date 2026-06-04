@@ -284,83 +284,35 @@ function initParticles() {
    COUNTDOWN
    ============================================ */
 function initCountdown() {
-    // Fixed launch target (UTC midnight, 16 Oct 2026)
-    const launchTarget = new Date('2026-10-16T00:00:00Z');
-    // Persist the end timestamp so the countdown never resets to a full duration on refresh
-    const STORAGE_KEY = 'beoutLaunchEnd';
-    if (!localStorage.getItem(STORAGE_KEY)) {
-        localStorage.setItem(STORAGE_KEY, launchTarget.getTime().toString());
-    }
-    const launchEnd = parseInt(localStorage.getItem(STORAGE_KEY), 10);
-
-    // Helper to stop the interval once the launch date is reached
+    // Fixed launch date: 16 October 2026 at midnight UTC
+    const launchDate = new Date('2026-10-16T00:00:00Z');
     let intervalId = null;
 
     function tick() {
-        const now = Date.now();
-        const diff = launchEnd - now;
+        const now = new Date();
+        const diff = launchDate - now;
+
         if (diff <= 0) {
-            // Launch date passed – stop updating and optionally hide the countdown UI
+            // Launch date has passed — hide countdown
             clearInterval(intervalId);
             const section = document.getElementById('countdown-section');
             if (section) section.style.display = 'none';
             return;
         }
+
         const d = Math.floor(diff / 864e5);
         const h = Math.floor((diff % 864e5) / 36e5);
         const m = Math.floor((diff % 36e5) / 6e4);
         const s = Math.floor((diff % 6e4) / 1e3);
-        document.getElementById('cd-days').textContent = String(d).padStart(2, '0');
+
+        document.getElementById('cd-days').textContent  = String(d).padStart(2, '0');
         document.getElementById('cd-hours').textContent = String(h).padStart(2, '0');
-        document.getElementById('cd-min').textContent = String(m).padStart(2, '0');
-        document.getElementById('cd-sec').textContent = String(s).padStart(2, '0');
+        document.getElementById('cd-min').textContent   = String(m).padStart(2, '0');
+        document.getElementById('cd-sec').textContent   = String(s).padStart(2, '0');
     }
+
     tick();
     intervalId = setInterval(tick, 1000);
-
-    // Fixed launch target (UTC midnight, 16 Oct 2026)
-    const launchTarget = new Date('2026-10-16T00:00:00Z');
-
-    // Helper to stop the interval once the launch date is reached
-    let intervalId = null;
-
-    function tick() {
-        const now = new Date();
-        const diff = launchTarget - now;
-        if (diff <= 0) {
-            // Launch date passed – stop updating and optionally show a message
-            clearInterval(intervalId);
-            document.getElementById('countdown-section').style.display = 'none';
-            return;
-        }
-        const d = Math.floor(diff / 864e5);
-        const h = Math.floor((diff % 864e5) / 36e5);
-        const m = Math.floor((diff % 36e5) / 6e4);
-        const s = Math.floor((diff % 6e4) / 1e3);
-        document.getElementById('cd-days').textContent = String(d).padStart(2, '0');
-        document.getElementById('cd-hours').textContent = String(h).padStart(2, '0');
-        document.getElementById('cd-min').textContent = String(m).padStart(2, '0');
-        document.getElementById('cd-sec').textContent = String(s).padStart(2, '0');
-    }
-    tick();
-    intervalId = setInterval(tick, 1000);
-
-    const launch = new Date('2026-10-16T00:00:00');
-
-    function tick() {
-        const diff = launch - new Date();
-        if (diff <= 0) return;
-        const d = Math.floor(diff / 864e5);
-        const h = Math.floor((diff % 864e5) / 36e5);
-        const m = Math.floor((diff % 36e5) / 6e4);
-        const s = Math.floor((diff % 6e4) / 1e3);
-        document.getElementById('cd-days').textContent = String(d).padStart(2, '0');
-        document.getElementById('cd-hours').textContent = String(h).padStart(2, '0');
-        document.getElementById('cd-min').textContent = String(m).padStart(2, '0');
-        document.getElementById('cd-sec').textContent = String(s).padStart(2, '0');
-    }
-    tick();
-    setInterval(tick, 1000);
 }
 
 /* ============================================
