@@ -1,5 +1,5 @@
 /* ==============================================
-   beout.ai — JavaScript
+   beout.ai — Coming Soon | JavaScript
    Bilingual EN / AR with full i18n
    ============================================== */
 
@@ -10,141 +10,53 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollReveal();
     initForm();
     initLangToggle();
-    initNavbarScroll();
-    initHamburger();
-    initSmoothScroll();
-    setTimeout(() => initTyping(), 1000);
-    requestAnimationFrame(() => document.body.classList.add('loaded'));
+    initCurrentYear();
+    // Typing starts after a short delay
+    setTimeout(() => initTyping(), 1200);
 });
-
-/* ============================================
-   NAVBAR SCROLL
-   ============================================ */
-function initNavbarScroll() {
-    const navbar = document.getElementById('navbar');
-    let lastScroll = 0;
-    window.addEventListener('scroll', () => {
-        const y = window.scrollY;
-        navbar.classList.toggle('scrolled', y > 60);
-        lastScroll = y;
-    }, { passive: true });
-}
-
-/* ============================================
-   HAMBURGER MENU
-   ============================================ */
-function initHamburger() {
-    const btn = document.getElementById('nav-hamburger');
-    const links = document.getElementById('nav-links');
-    if (!btn || !links) return;
-    let isOpen = false;
-
-    function open() {
-        isOpen = true;
-        btn.classList.add('open');
-        links.classList.add('open');
-        btn.setAttribute('aria-expanded', 'true');
-        document.body.style.overflow = 'hidden';
-        const firstLink = links.querySelector('a');
-        if (firstLink) firstLink.focus();
-    }
-
-    function close() {
-        isOpen = false;
-        btn.classList.remove('open');
-        links.classList.remove('open');
-        btn.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-    }
-
-    btn.addEventListener('click', () => isOpen ? close() : open());
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && isOpen) { close(); btn.focus(); } });
-    links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => close()));
-}
-
-/* ============================================
-   SMOOTH SCROLL
-   ============================================ */
-function initSmoothScroll() {
-    document.querySelectorAll('a[href^="#"]').forEach(a => {
-        a.addEventListener('click', e => {
-            const href = a.getAttribute('href');
-            if (!href || href === '#') return;
-            const target = document.querySelector(href);
-            if (target) {
-                e.preventDefault();
-                const navH = document.querySelector('.navbar')?.offsetHeight || 0;
-                const top = target.getBoundingClientRect().top + window.scrollY - navH - 16;
-                window.scrollTo({ top, behavior: 'smooth' });
-            }
-        });
-    });
-}
 
 /* ============================================
    INTERNATIONALIZATION (i18n)
    ============================================ */
 const i18n = {
     en: {
-        nav_status: 'Systems Online',
-        hero_desc: 'Egypt\'s first <strong>AI-native cybersecurity</strong> ecosystem. Predictive protection. Autonomous investigation. Zero compromise.',
-        cta_get_access: 'Get Early Access',
+        nav_status: 'Systems Initializing',
+        hero_desc: 'Egypt\'s first <strong>AI-native cybersecurity</strong> ecosystem.<br>Predictive protection. Autonomous investigation. Zero compromise.',
         pill_horus: 'AI Firewall',
         pill_anubis: 'Endpoint AI',
         pill_thoth: 'Threat Intel',
         pill_maat: 'Email Guard',
         pill_ra: 'SOC-as-a-Service',
-        countdown_badge: 'COUNTDOWN TO LAUNCH',
-        countdown_date_prefix: 'Launch Date: ',
+        countdown_label: 'Launching In',
         cd_days: 'Days',
         cd_hours: 'Hours',
         cd_min: 'Minutes',
         cd_sec: 'Seconds',
-        countdown_live: 'We Are Live',
-        signup_title: 'Be First In Line',
-        signup_label: 'Join the waiting list for early access and exclusive launch pricing.',
+        signup_label: 'Get early access. Be the first to know.',
         email_placeholder: 'Enter your email address',
         cta_btn: 'Notify Me',
-        signup_success: 'You\'re on the list. We\'ll notify you at launch.',
+        signup_success: '✅ You\'re on the list! We\'ll notify you at launch.',
         ticker_label: 'LIVE THREAT FEED',
         stat_monitoring: 'AI Monitoring',
         stat_response: 'Threat Response',
         stat_detection: 'Detection Rate',
         stat_api: 'External APIs',
         features_title: 'What\'s Coming',
-        features_subtitle: 'A complete cybersecurity ecosystem purpose-built for the Egyptian market.',
         feat_ai_t: 'Local AI Detection',
-        feat_ai_d: 'On-premise AI engine that detects threats in real-time. No external API calls. No data leaves your network.',
+        feat_ai_d: 'On-premise AI engine that detects threats in real-time — no external API calls, no data leaves your network.',
         feat_inv_t: 'Auto Investigation',
-        feat_inv_d: 'When an attack hits, our AI automatically investigates. Identifies source, timeline, affected devices, and isolates threats.',
+        feat_inv_d: 'When an attack hits, our AI automatically investigates — identifies source, timeline, affected devices, and isolates threats.',
         feat_col_t: 'Collective Intelligence',
         feat_col_d: 'Every client\'s detection strengthens the network. A threat found once is blocked everywhere — instantly.',
         feat_comp_t: 'PDPL & ISO 27001',
-        feat_comp_d: 'Built-in compliance engine for Egypt\'s PDPL, ISO 27001, and PCI-DSS. Automated reports in Arabic & English.',
+        feat_comp_d: 'Built-in compliance engine for Egypt\'s PDPL, ISO 27001, and PCI-DSS — automated reports in Arabic & English.',
         feat_dark_t: 'Dark Web Monitoring',
-        feat_dark_d: 'AI crawls the dark web 24/7. Detecting leaked credentials, brand impersonation, and threat actor activity.',
+        feat_dark_d: 'AI crawls the dark web 24/7 — detecting leaked credentials, brand impersonation, and threat actor activity.',
         feat_dep_t: '25-Minute Deployment',
-        feat_dep_d: 'Download the OVF, plug it in as a network bridge, enter your license key. Full protection in under 25 minutes.',
+        feat_dep_d: 'Download the OVF, plug it in as a network bridge, enter your license key — full protection in under 25 minutes.',
         footer_tagline: 'Egypt\'s First AI-Native Cybersecurity Company',
         footer_rights: 'All rights reserved.',
         lang_toggle: 'العربية',
-        skip_link: 'Skip to main content',
-        nav_features: 'Features',
-        nav_how: 'How It Works',
-        nav_signup: 'Sign Up',
-        signup_trust: 'No spam. Cancel anytime.',
-        how_title: 'Deploy in 25 Minutes',
-        how_subtitle: 'Three steps. Full AI protection.',
-        how_step1_t: 'Download OVF',
-        how_step1_d: 'Download the beout.ai virtual appliance. No complex setup. No vendor lock-in.',
-        how_step2_t: 'Deploy as Bridge',
-        how_step2_d: 'Plug it in as a network bridge and enter your license key. Works with any existing setup.',
-        how_step3_t: 'AI Protection Active',
-        how_step3_d: 'Autonomous threat detection & response goes live. Zero external APIs. 100% local AI.',
-        trust_label: 'Compliant with',
-        footer_product: 'Product',
-        footer_company: 'Company',
-        footer_location: 'Cairo, Egypt',
         taglines: [
             'AI Threat Detection & Response',
             'The Eye That Never Closes',
@@ -155,65 +67,43 @@ const i18n = {
         ]
     },
     ar: {
-        nav_status: 'الأنظمة متصلة',
-        hero_desc: 'أول منظومة <strong>أمن سيبراني بالذكاء الاصطناعي</strong> في مصر. حماية استباقية. تحقيق تلقائي. بدون تنازل.',
-        cta_get_access: 'احصل على وصول مبكر',
+        nav_status: 'جارٍ تهيئة الأنظمة',
+        hero_desc: 'أول منظومة <strong>أمن سيبراني بالذكاء الاصطناعي</strong> في مصر.<br>حماية استباقية. تحقيق تلقائي. بدون تنازل.',
         pill_horus: 'جدار ناري ذكي',
         pill_anubis: 'حماية الأجهزة',
         pill_thoth: 'استخبارات التهديدات',
         pill_maat: 'حماية البريد',
         pill_ra: 'مركز عمليات أمني',
-        countdown_badge: 'العد التنازلي للإطلاق',
-        countdown_date_prefix: 'تاريخ الإطلاق: ',
+        countdown_label: 'الإطلاق بعد',
         cd_days: 'يوم',
         cd_hours: 'ساعة',
         cd_min: 'دقيقة',
         cd_sec: 'ثانية',
-        countdown_live: 'نحن الآن مباشرون',
-        signup_title: 'كن أول المنتظرين',
-        signup_label: 'انضم لقائمة الانتظار للوصول المبكر وأسعار الإطلاق الحصرية.',
+        signup_label: 'احصل على وصول مبكر. كن أول من يعرف.',
         email_placeholder: 'أدخل بريدك الإلكتروني',
         cta_btn: 'أبلغني',
-        signup_success: 'تمت إضافتك للقائمة. سنبلغك فور الإطلاق.',
-        ticker_label: 'تغذية التهديدات المباشرة',
+        signup_success: '✅ تمت إضافتك! سنبلغك فور الإطلاق.',
+        ticker_label: 'LIVE THREAT FEED',
         stat_monitoring: 'مراقبة بالذكاء الاصطناعي',
         stat_response: 'سرعة الاستجابة',
         stat_detection: 'معدل الكشف',
         stat_api: 'واجهات خارجية',
         features_title: 'ما الذي سيأتي',
-        features_subtitle: 'منظومة أمن سيبراني متكاملة صُممت خصيصاً للسوق المصري.',
         feat_ai_t: 'كشف محلي بالذكاء الاصطناعي',
-        feat_ai_d: 'محرك ذكاء اصطناعي محلي يكتشف التهديدات لحظياً. بدون اتصال خارجي. بياناتك لا تغادر شبكتك أبداً.',
+        feat_ai_d: 'محرك ذكاء اصطناعي محلي يكتشف التهديدات لحظياً — بدون اتصال خارجي، بياناتك لا تغادر شبكتك أبداً.',
         feat_inv_t: 'تحقيق تلقائي',
-        feat_inv_d: 'عند حدوث هجوم، الذكاء الاصطناعي يحقق تلقائياً. يحدد المصدر، الجدول الزمني، الأجهزة المتأثرة، ويعزل التهديد.',
+        feat_inv_d: 'عند حدوث هجوم، الذكاء الاصطناعي يحقق تلقائياً — يحدد المصدر، الجدول الزمني، الأجهزة المتأثرة، ويعزل التهديد.',
         feat_col_t: 'ذكاء جماعي',
         feat_col_d: 'كل اكتشاف عند أي عميل يقوي الشبكة بأكملها. تهديد يُكتشف مرة واحدة يُحظر في كل مكان — فوراً.',
         feat_comp_t: 'PDPL و ISO 27001',
-        feat_comp_d: 'محرك امتثال مدمج لقانون حماية البيانات المصري، ISO 27001، و PCI-DSS. تقارير تلقائية بالعربية والإنجليزية.',
+        feat_comp_d: 'محرك امتثال مدمج لقانون حماية البيانات المصري، ISO 27001، و PCI-DSS — تقارير تلقائية بالعربية والإنجليزية.',
         feat_dark_t: 'مراقبة الدارك ويب',
-        feat_dark_d: 'الذكاء الاصطناعي يراقب الدارك ويب على مدار الساعة. يكشف تسريب بيانات الاعتماد وانتحال العلامة التجارية.',
+        feat_dark_d: 'الذكاء الاصطناعي يراقب الدارك ويب على مدار الساعة — يكشف تسريب بيانات الاعتماد وانتحال العلامة التجارية.',
         feat_dep_t: 'تشغيل في 25 دقيقة',
-        feat_dep_d: 'حمّل ملف الـ OVF، وصّله كجسر شبكة، أدخل مفتاح الترخيص. حماية كاملة في أقل من 25 دقيقة.',
+        feat_dep_d: 'حمّل ملف الـ OVF، وصّله كجسر شبكة، أدخل مفتاح الترخيص — حماية كاملة في أقل من 25 دقيقة.',
         footer_tagline: 'أول شركة أمن سيبراني بالذكاء الاصطناعي في مصر',
         footer_rights: 'جميع الحقوق محفوظة.',
         lang_toggle: 'English',
-        skip_link: 'انتقل للمحتوى الرئيسي',
-        nav_features: 'المميزات',
-        nav_how: 'كيف يعمل',
-        nav_signup: 'سجّل',
-        signup_trust: 'بدون سبام. يمكنك الإلغاء في أي وقت.',
-        how_title: 'تشغيل في 25 دقيقة',
-        how_subtitle: 'ثلاث خطوات. حماية كاملة بالذكاء الاصطناعي.',
-        how_step1_t: 'حمّل ملف OVF',
-        how_step1_d: 'حمّل جهاز beout.ai الافتراضي. بدون إعداد معقد. بدون ارتباط بمورد معين.',
-        how_step2_t: 'وصّل كجسر شبكة',
-        how_step2_d: 'وصّله كجسر شبكة وأدخل مفتاح الترخيص. يعمل مع أي إعداد موجود.',
-        how_step3_t: 'الحماية الذكية تعمل',
-        how_step3_d: 'كشف التهديدات والاستجابة يعملان تلقائياً. بدون واجهات خارجية. ذكاء اصطناعي محلي 100%.',
-        trust_label: 'متوافق مع',
-        footer_product: 'المنتجات',
-        footer_company: 'الشركة',
-        footer_location: 'القاهرة، مصر',
         taglines: [
             'كشف التهديدات والاستجابة بالذكاء الاصطناعي',
             'العين التي لا تنام',
@@ -232,113 +122,56 @@ function setLang(lang) {
     const t = i18n[lang];
     const html = document.documentElement;
 
+    // Direction & lang attribute
     html.setAttribute('lang', lang === 'ar' ? 'ar' : 'en');
     html.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
 
+    // Update page title & meta
     document.title = lang === 'ar'
         ? 'beout.ai — أمن سيبراني بالذكاء الاصطناعي | قريباً'
         : 'beout.ai — AI-Powered Cybersecurity | Coming Soon';
-
     const metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
         metaDesc.setAttribute('content', lang === 'ar'
-            ? 'beout.ai تبني أول منظومة أمن سيبراني متكاملة بالذكاء الاصطناعي في مصر.'
-            : 'beout.ai is building Egypt\'s first complete AI cybersecurity ecosystem.');
+            ? 'beout.ai تبني أول منظومة أمن سيبراني متكاملة بالذكاء الاصطناعي في مصر. كشف تهديدات، تحقيق تلقائي، حماية استباقية.'
+            : 'beout.ai is building Egypt\'s first complete AI cybersecurity ecosystem. AI-powered threat detection, autonomous investigation, and predictive security.');
     }
 
+    // Text content via data-i18n
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (t[key] !== undefined) el.innerHTML = t[key];
+        if (t[key] !== undefined) {
+            el.innerHTML = t[key];
+        }
     });
 
+    // Placeholders
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
         const key = el.getAttribute('data-i18n-placeholder');
         if (t[key] !== undefined) el.placeholder = t[key];
     });
 
+    // Toggle button text
     document.getElementById('lang-toggle-text').textContent = t.lang_toggle;
 
-    // Update countdown date label
-    updateCountdownDateLabel();
-
+    // Restart typing with new language taglines
     restartTyping();
 
+    // Save preference
     try { localStorage.setItem('beout_lang', lang); } catch(e) {}
 }
 
 function initLangToggle() {
-    document.getElementById('lang-toggle').addEventListener('click', () => {
+    const btn = document.getElementById('lang-toggle');
+    btn.addEventListener('click', () => {
         setLang(currentLang === 'en' ? 'ar' : 'en');
     });
+
+    // Restore saved language
     try {
         const saved = localStorage.getItem('beout_lang');
         if (saved === 'ar') setLang('ar');
     } catch(e) {}
-}
-
-/* ============================================
-   COUNTDOWN
-   ============================================ */
-let countdownInterval = null;
-
-function initCountdown() {
-    // ------------------------------------------
-    // LAUNCH DATE: Configure this to your real target date
-    // Format: YYYY-MM-DDTHH:MM:SS (local time)
-    // ------------------------------------------
-    const LAUNCH_DATE = '2026-09-01T00:00:00';
-
-    const launch = new Date(LAUNCH_DATE);
-    const cdDays = document.getElementById('cd-days');
-    const cdHours = document.getElementById('cd-hours');
-    const cdMin = document.getElementById('cd-min');
-    const cdSec = document.getElementById('cd-sec');
-    const badgeText = document.querySelector('.badge-text');
-    const badgeDot = document.querySelector('.badge-dot');
-
-    // Show the human-readable launch date below countdown
-    updateCountdownDateLabel();
-
-    function tick() {
-        const now = new Date();
-        const diff = launch - now;
-
-        if (diff <= 0) {
-            cdDays.textContent = '00';
-            cdHours.textContent = '00';
-            cdMin.textContent = '00';
-            cdSec.textContent = '00';
-            badgeText.textContent = i18n[currentLang].countdown_live;
-            badgeText.style.color = 'var(--green)';
-            badgeDot.style.background = 'var(--green)';
-            badgeDot.style.boxShadow = '0 0 8px rgba(0,230,118,0.5)';
-            return;
-        }
-
-        const d = Math.floor(diff / 86400000);
-        const h = Math.floor((diff % 86400000) / 3600000);
-        const m = Math.floor((diff % 3600000) / 60000);
-        const s = Math.floor((diff % 60000) / 1000);
-
-        cdDays.textContent = String(d).padStart(2, '0');
-        cdHours.textContent = String(h).padStart(2, '0');
-        cdMin.textContent = String(m).padStart(2, '0');
-        cdSec.textContent = String(s).padStart(2, '0');
-    }
-
-    tick();
-    if (countdownInterval) clearInterval(countdownInterval);
-    countdownInterval = setInterval(tick, 1000);
-}
-
-function updateCountdownDateLabel() {
-    const el = document.getElementById('countdown-date');
-    if (!el) return;
-    const LAUNCH_DATE = new Date('2026-09-01T00:00:00');
-    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    const prefix = i18n[currentLang].countdown_date_prefix;
-    const locale = currentLang === 'ar' ? 'ar-EG' : 'en-US';
-    el.textContent = prefix + LAUNCH_DATE.toLocaleDateString(locale, options) + ' UTC';
 }
 
 /* ============================================
@@ -364,10 +197,10 @@ function initTyping() {
             ci++;
             if (ci === txt.length) {
                 deleting = true;
-                typingTimeout = setTimeout(step, 2800);
+                typingTimeout = setTimeout(step, 2500);
                 return;
             }
-            typingTimeout = setTimeout(step, 50);
+            typingTimeout = setTimeout(step, 55);
         } else {
             el.textContent = txt.substring(0, ci - 1);
             ci--;
@@ -375,7 +208,7 @@ function initTyping() {
                 deleting = false;
                 pi = (pi + 1) % phrases.length;
             }
-            typingTimeout = setTimeout(step, 28);
+            typingTimeout = setTimeout(step, 30);
         }
     }
     step();
@@ -389,119 +222,186 @@ function initParticles() {
     const ctx = c.getContext('2d');
     let particles = [];
     let mouse = { x: null, y: null };
-    let animId;
-    const dpr = window.devicePixelRatio || 1;
 
-    function resize() {
-        c.width = window.innerWidth * dpr;
-        c.height = window.innerHeight * dpr;
-        c.style.width = window.innerWidth + 'px';
-        c.style.height = window.innerHeight + 'px';
-    }
+    function resize() { c.width = window.innerWidth; c.height = window.innerHeight; }
     resize();
-    window.addEventListener('resize', resize, { passive: true });
-    window.addEventListener('mousemove', e => { mouse.x = e.clientX * dpr; mouse.y = e.clientY * dpr; }, { passive: true });
+    window.addEventListener('resize', resize);
+    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 
     class P {
         constructor() { this.reset(); }
         reset() {
             this.x = Math.random() * c.width;
             this.y = Math.random() * c.height;
-            this.s = (Math.random() * 1.5 + 0.2) * dpr;
-            this.vx = (Math.random() - 0.5) * 0.3 * dpr;
-            this.vy = (Math.random() - 0.5) * 0.3 * dpr;
-            this.o = Math.random() * 0.4 + 0.1;
+            this.s = Math.random() * 1.8 + 0.3;
+            this.vx = (Math.random() - 0.5) * 0.4;
+            this.vy = (Math.random() - 0.5) * 0.4;
+            this.o = Math.random() * 0.5 + 0.1;
         }
         update() {
             this.x += this.vx; this.y += this.vy;
             if (mouse.x !== null) {
                 const dx = mouse.x - this.x, dy = mouse.y - this.y;
-                const d2 = dx * dx + dy * dy;
-                const repelR = 120 * dpr;
-                if (d2 < repelR * repelR) {
-                    const d = Math.sqrt(d2);
-                    this.x -= dx / d * 0.5 * dpr;
-                    this.y -= dy / d * 0.5 * dpr;
-                }
+                const d = Math.sqrt(dx*dx + dy*dy);
+                if (d < 120) { this.x -= dx * 0.008; this.y -= dy * 0.008; }
             }
             if (this.x < 0 || this.x > c.width) this.vx *= -1;
             if (this.y < 0 || this.y > c.height) this.vy *= -1;
         }
         draw() {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.s, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(0,229,255,${this.o})`;
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.s, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0,229,255,${this.o})`; ctx.fill();
         }
     }
 
-    const isMobile = window.innerWidth < 768;
-    const n = isMobile ? 30 : Math.min(60, Math.floor(window.innerWidth / 20));
+    const n = Math.min(80, Math.floor(window.innerWidth / 15));
     for (let i = 0; i < n; i++) particles.push(new P());
 
-    const lineDist = 140 * dpr;
     function lines() {
-        const len = particles.length;
-        for (let i = 0; i < len; i++) {
-            const pi = particles[i];
-            for (let j = i + 1; j < len; j++) {
-                const pj = particles[j];
-                const dx = pi.x - pj.x, dy = pi.y - pj.y;
-                const d2 = dx * dx + dy * dy;
-                if (d2 < lineDist * lineDist) {
-                    const d = Math.sqrt(d2);
+        for (let i = 0; i < particles.length; i++)
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
+                const d = Math.sqrt(dx*dx + dy*dy);
+                if (d < 140) {
                     ctx.beginPath();
-                    ctx.moveTo(pi.x, pi.y);
-                    ctx.lineTo(pj.x, pj.y);
-                    ctx.strokeStyle = `rgba(0,229,255,${0.05 * (1 - d / lineDist)})`;
-                    ctx.lineWidth = 0.5 * dpr;
-                    ctx.stroke();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = `rgba(0,229,255,${0.06 * (1 - d / 140)})`;
+                    ctx.lineWidth = 0.5; ctx.stroke();
                 }
             }
-        }
     }
 
     (function animate() {
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.clearRect(0, 0, c.width / dpr, c.height / dpr);
+        ctx.clearRect(0, 0, c.width, c.height);
         particles.forEach(p => { p.update(); p.draw(); });
         lines();
-        animId = requestAnimationFrame(animate);
+        requestAnimationFrame(animate);
     })();
-
-    // Cleanup on page hide
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) cancelAnimationFrame(animId);
-        else animate();
-    });
 }
 
 /* ============================================
-   THREAT TICKER
+   COUNTDOWN
    ============================================ */
-function initThreatTicker() {
-    const threats = [
-        { ip: '185.220.101.xx', type: 'Brute Force SSH', action: 'BLOCKED' },
-        { ip: '45.155.205.xx', type: 'Ransomware C2', action: 'QUARANTINED' },
-        { ip: '194.26.135.xx', type: 'SQL Injection', action: 'BLOCKED' },
-        { ip: '89.248.163.xx', type: 'Port Scan', action: 'DETECTED' },
-        { ip: '162.142.125.xx', type: 'Phishing Link', action: 'BLOCKED' },
-        { ip: '198.235.24.xx', type: 'DDoS Attempt', action: 'MITIGATED' },
-        { ip: '91.219.237.xx', type: 'Malware Download', action: 'BLOCKED' },
-        { ip: '23.129.64.xx', type: 'Data Exfiltration', action: 'ISOLATED' },
-        { ip: '104.244.73.xx', type: 'Zero-Day Exploit', action: 'QUARANTINED' },
-        { ip: '171.25.193.xx', type: 'Credential Stuffing', action: 'BLOCKED' },
-    ];
+function initCountdown() {
+    // Fixed launch date: 16 October 2026 at midnight UTC
+    const launchDate = new Date('2026-10-16T00:00:00Z');
+    let intervalId = null;
+
+    function tick() {
+        const now = new Date();
+        const diff = launchDate - now;
+
+        if (diff <= 0) {
+            // Launch date has passed — hide countdown
+            clearInterval(intervalId);
+            const section = document.getElementById('countdown-section');
+            if (section) section.style.display = 'none';
+            return;
+        }
+
+        const d = Math.floor(diff / 864e5);
+        const h = Math.floor((diff % 864e5) / 36e5);
+        const m = Math.floor((diff % 36e5) / 6e4);
+        const s = Math.floor((diff % 6e4) / 1e3);
+
+        document.getElementById('cd-days').textContent  = String(d).padStart(2, '0');
+        document.getElementById('cd-hours').textContent = String(h).padStart(2, '0');
+        document.getElementById('cd-min').textContent   = String(m).padStart(2, '0');
+        document.getElementById('cd-sec').textContent   = String(s).padStart(2, '0');
+    }
+
+    tick();
+    intervalId = setInterval(tick, 1000);
+}
+
+/* ============================================
+   THREAT TICKER — Real-Time Check Point ThreatCloud
+   ============================================ */
+
+// Static fallback threats (used when live API is unavailable)
+const FALLBACK_THREATS = [
+    { type: 'HTTP Headers Remote Code Execution', source: 'Germany', target: 'Israel', action: 'BLOCKED', category: 'exploit' },
+    { type: 'EMC AlphaStor command injection', source: 'United States', target: 'United States', action: 'BLOCKED', category: 'exploit' },
+    { type: 'OpenSSL TLS Downgrade Attack', source: 'Canada', target: 'Russia', action: 'DETECTED', category: 'exploit' },
+    { type: 'Apache Log4j RCE (CVE-2021-44228)', source: 'China', target: 'Germany', action: 'QUARANTINED', category: 'exploit' },
+    { type: 'SQL Injection via Web Form', source: 'Brazil', target: 'France', action: 'BLOCKED', category: 'exploit' },
+    { type: 'Emotet Trojan Distribution', source: 'Ukraine', target: 'United Kingdom', action: 'QUARANTINED', category: 'malware' },
+    { type: 'Dridex Banking Trojan C2', source: 'Russia', target: 'Japan', action: 'ISOLATED', category: 'botnet' },
+    { type: 'WordPress Remote Code Execution', source: 'Netherlands', target: 'India', action: 'BLOCKED', category: 'exploit' },
+    { type: 'SSH Brute Force Attack', source: 'Vietnam', target: 'Singapore', action: 'BLOCKED', category: 'exploit' },
+    { type: 'DNS Amplification DDoS', source: 'South Korea', target: 'Australia', action: 'MITIGATED', category: 'exploit' },
+];
+
+// Country code → flag emoji
+const countryFlag = (co) => {
+    if (!co || co.length !== 2) return '🌐';
+    return String.fromCodePoint(...[...co.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+};
+
+function renderTicker(threats, isLive = false) {
     const track = document.getElementById('ticker-track');
-    // Triple for seamless loop
-    [...threats, ...threats, ...threats].forEach(t => {
+    track.innerHTML = '';
+
+    // Duplicate for seamless scroll loop
+    [...threats, ...threats].forEach(t => {
         const s = document.createElement('span');
         s.className = 'ticker-item';
-        s.innerHTML = `<span class="tt">${t.type}</span> &middot; ${t.ip} &middot; <span class="ta">${t.action}</span>`;
+
+        const actionClass = {
+            'BLOCKED': 'ta-blocked',
+            'QUARANTINED': 'ta-quarantined',
+            'ISOLATED': 'ta-isolated',
+            'DETECTED': 'ta-detected',
+            'MITIGATED': 'ta-mitigated',
+        }[t.action] || '';
+
+        const categoryTag = t.category
+            ? `<span class="ts">${t.category.toUpperCase()}</span>`
+            : '';
+
+        // Show source → target country with flags
+        const srcFlag = t.source_co ? countryFlag(t.source_co) : '';
+        const dstFlag = t.target_co ? countryFlag(t.target_co) : '';
+        const srcLabel = t.source || 'Unknown';
+        const dstLabel = t.target || 'Unknown';
+
+        s.innerHTML = `${categoryTag}<span class="tt">${t.type}</span> ${srcFlag} ${srcLabel} → ${dstFlag} ${dstLabel} — <span class="ta ${actionClass}">${t.action}</span>`;
         track.appendChild(s);
     });
-    // Slower scroll for triple content
-    track.style.animationDuration = '60s';
+}
+
+async function fetchLiveThreats() {
+    try {
+        const res = await fetch('/api/threats.php', { cache: 'no-cache' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.status === 'ok' && data.threats && data.threats.length > 0) {
+            return data.threats;
+        }
+    } catch (e) {
+        console.warn('[beout.ai] Live threat feed unavailable, using fallback:', e.message);
+    }
+    return null;
+}
+
+async function initThreatTicker() {
+    // Try live Check Point ThreatCloud feed first
+    const liveThreats = await fetchLiveThreats();
+
+    if (liveThreats) {
+        renderTicker(liveThreats, true);
+        console.log(`[beout.ai] 🔴 Live threat feed: ${liveThreats.length} attacks from Check Point ThreatCloud`);
+    } else {
+        renderTicker(FALLBACK_THREATS, false);
+        console.log('[beout.ai] Using static threat data (fallback)');
+    }
+
+    // Refresh every 2 minutes
+    setInterval(async () => {
+        const fresh = await fetchLiveThreats();
+        if (fresh) renderTicker(fresh, true);
+    }, 2 * 60 * 1000);
 }
 
 /* ============================================
@@ -514,15 +414,11 @@ function initScrollReveal() {
                 e.target.classList.add('visible');
                 const num = e.target.querySelector('.stat-num');
                 if (num) animateNum(num);
-                // Stagger children within containers
-                e.target.querySelectorAll('.feature-card, .how-step').forEach((child, i) => {
-                    child.style.transitionDelay = `${i * 80}ms`;
-                });
             }
         });
     }, { threshold: 0.15 });
 
-    document.querySelectorAll('.feature-card, .stat-card, .how-step').forEach(el => {
+    document.querySelectorAll('.feature-card, .stat-card').forEach(el => {
         el.classList.add('reveal');
         obs.observe(el);
     });
@@ -533,113 +429,37 @@ function animateNum(el) {
     el.dataset.done = '1';
     const target = parseInt(el.dataset.target);
     const start = performance.now();
-    const dur = 1800;
+    const dur = 1500;
     (function step(now) {
         const p = Math.min((now - start) / dur, 1);
-        const ease = 1 - Math.pow(1 - p, 4);
-        const val = Math.floor(target * ease);
-        el.textContent = val === 0 && target === 0 ? '0' : val;
+        const ease = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.floor(target * ease);
         if (p < 1) requestAnimationFrame(step);
         else el.textContent = target;
     })(start);
 }
 
 /* ============================================
-   CONFETTI
-   ============================================ */
-function fireConfetti() {
-    const colors = ['#00e5ff', '#7c4dff', '#00e676', '#2979ff'];
-    for (let i = 0; i < 40; i++) {
-        const dot = document.createElement('div');
-        const color = colors[i % colors.length];
-        dot.style.cssText = [
-            'position:fixed', 'width:6px', 'height:6px', 'border-radius:50%',
-            `background:${color}`,
-            'left:50%', 'top:55%', 'pointer-events:none', 'z-index:9999'
-        ].join(';');
-        document.body.appendChild(dot);
-        const angle = (Math.PI * 2 * i) / 40 - Math.PI / 2;
-        const velocity = 60 + Math.random() * 120;
-        const tx = Math.cos(angle) * velocity;
-        const ty = Math.sin(angle) * velocity - 40;
-        const dur = 600 + Math.random() * 300;
-        const anim = dot.animate([
-            { transform: 'translate3d(0,0,0) scale(1)', opacity: 1 },
-            { transform: `translate3d(${tx}px,${ty}px,0) scale(0)`, opacity: 0 }
-        ], { duration: dur, easing: 'cubic-bezier(0,.9,.57,1)', fill: 'forwards' });
-        anim.onfinish = () => dot.remove();
-    }
-}
-
-/* ============================================
    EMAIL FORM
    ============================================ */
+function initCurrentYear() {
+    const yearEl = document.getElementById('current-year');
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
+}
+
 function initForm() {
     const form = document.getElementById('signup-form');
-    const emailInput = document.getElementById('email-input');
-    const btn = document.getElementById('cta-button');
-    const success = document.getElementById('signup-success');
-    const inputWrapper = form.querySelector('.input-wrapper');
-    let submitted = false;
-
-    function clearError() {
-        const prev = inputWrapper.querySelector('.input-error');
-        if (prev) prev.remove();
-        emailInput.style.borderColor = '';
-    }
-
-    function showError(msg) {
-        clearError();
-        const err = document.createElement('span');
-        err.className = 'input-error';
-        err.textContent = msg;
-        err.style.cssText = 'position:absolute;bottom:-22px;left:0;font-size:0.7rem;color:var(--red);font-family:var(--font-mono);white-space:nowrap;';
-        inputWrapper.style.position = 'relative';
-        inputWrapper.appendChild(err);
-        emailInput.style.borderColor = 'var(--red)';
-    }
-
-    emailInput.addEventListener('input', clearError);
-    emailInput.addEventListener('focus', clearError);
-
     form.addEventListener('submit', e => {
         e.preventDefault();
-        if (submitted) return;
+        const btn = document.getElementById('cta-button');
+        const success = document.getElementById('signup-success');
 
-        const email = emailInput.value.trim();
-        clearError();
-
-        if (!email) {
-            showError(currentLang === 'ar' ? 'يرجى إدخال بريد إلكتروني' : 'Please enter your email');
-            emailInput.focus();
-            return;
-        }
-
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            showError(currentLang === 'ar' ? 'بريد إلكتروني غير صالح' : 'Please enter a valid email');
-            emailInput.focus();
-            return;
-        }
-
-        submitted = true;
         btn.querySelector('.btn-text').textContent = currentLang === 'ar' ? 'جارٍ الإرسال...' : 'Sending...';
         btn.disabled = true;
 
         setTimeout(() => {
             form.style.display = 'none';
             success.classList.add('show');
-            fireConfetti();
-            try {
-                localStorage.setItem('beout_email', email);
-                localStorage.setItem('beout_signed_up', '1');
-            } catch(e) {}
-        }, 1000);
+        }, 800);
     });
-
-    try {
-        if (localStorage.getItem('beout_signed_up') === '1') {
-            form.style.display = 'none';
-            success.classList.add('show');
-        }
-    } catch(e) {}
 }
