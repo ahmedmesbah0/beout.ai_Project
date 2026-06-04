@@ -152,7 +152,8 @@ function setLang(lang) {
     });
 
     // Toggle button text
-    document.getElementById('lang-toggle-text').textContent = t.lang_toggle;
+    const toggleText = document.getElementById('lang-toggle-text');
+    if (toggleText) toggleText.textContent = t.lang_toggle;
 
     // Restart typing with new language taglines
     restartTyping();
@@ -163,6 +164,7 @@ function setLang(lang) {
 
 function initLangToggle() {
     const btn = document.getElementById('lang-toggle');
+    if (!btn) return;
     btn.addEventListener('click', () => {
         setLang(currentLang === 'en' ? 'ar' : 'en');
     });
@@ -181,12 +183,14 @@ let typingTimeout = null;
 
 function restartTyping() {
     if (typingTimeout) clearTimeout(typingTimeout);
-    document.getElementById('tagline-text').textContent = '';
+    const el = document.getElementById('tagline-text');
+    if (el) el.textContent = '';
     setTimeout(() => initTyping(), 400);
 }
 
 function initTyping() {
     const el = document.getElementById('tagline-text');
+    if (!el) return;
     const phrases = i18n[currentLang].taglines;
     let pi = 0, ci = 0, deleting = false;
 
@@ -219,6 +223,7 @@ function initTyping() {
    ============================================ */
 function initParticles() {
     const c = document.getElementById('particle-canvas');
+    if (!c) return;
     const ctx = c.getContext('2d');
     let particles = [];
     let mouse = { x: null, y: null };
@@ -305,10 +310,15 @@ function initCountdown() {
         const m = Math.floor((diff % 36e5) / 6e4);
         const s = Math.floor((diff % 6e4) / 1e3);
 
-        document.getElementById('cd-days').textContent  = String(d).padStart(2, '0');
-        document.getElementById('cd-hours').textContent = String(h).padStart(2, '0');
-        document.getElementById('cd-min').textContent   = String(m).padStart(2, '0');
-        document.getElementById('cd-sec').textContent   = String(s).padStart(2, '0');
+        const daysEl = document.getElementById('cd-days');
+        const hoursEl = document.getElementById('cd-hours');
+        const minEl = document.getElementById('cd-min');
+        const secEl = document.getElementById('cd-sec');
+
+        if (daysEl) daysEl.textContent = String(d).padStart(2, '0');
+        if (hoursEl) hoursEl.textContent = String(h).padStart(2, '0');
+        if (minEl) minEl.textContent = String(m).padStart(2, '0');
+        if (secEl) secEl.textContent = String(s).padStart(2, '0');
     }
 
     tick();
@@ -319,28 +329,29 @@ function initCountdown() {
    THREAT TICKER — Real-Time Check Point ThreatCloud
    ============================================ */
 
-// Static fallback threats (used when live API is unavailable)
+// Static fallback threats with country codes for proper flag rendering
 const FALLBACK_THREATS = [
-    { type: 'HTTP Headers Remote Code Execution', source: 'Germany', target: 'Israel', action: 'BLOCKED', category: 'exploit' },
-    { type: 'EMC AlphaStor command injection', source: 'United States', target: 'United States', action: 'BLOCKED', category: 'exploit' },
-    { type: 'OpenSSL TLS Downgrade Attack', source: 'Canada', target: 'Russia', action: 'DETECTED', category: 'exploit' },
-    { type: 'Apache Log4j RCE (CVE-2021-44228)', source: 'China', target: 'Germany', action: 'QUARANTINED', category: 'exploit' },
-    { type: 'SQL Injection via Web Form', source: 'Brazil', target: 'France', action: 'BLOCKED', category: 'exploit' },
-    { type: 'Emotet Trojan Distribution', source: 'Ukraine', target: 'United Kingdom', action: 'QUARANTINED', category: 'malware' },
-    { type: 'Dridex Banking Trojan C2', source: 'Russia', target: 'Japan', action: 'ISOLATED', category: 'botnet' },
-    { type: 'WordPress Remote Code Execution', source: 'Netherlands', target: 'India', action: 'BLOCKED', category: 'exploit' },
-    { type: 'SSH Brute Force Attack', source: 'Vietnam', target: 'Singapore', action: 'BLOCKED', category: 'exploit' },
-    { type: 'DNS Amplification DDoS', source: 'South Korea', target: 'Australia', action: 'MITIGATED', category: 'exploit' },
+    { type: 'HTTP Headers Remote Code Execution', source: 'Germany', source_co: 'DE', target: 'Israel', target_co: 'IL', action: 'BLOCKED', category: 'exploit' },
+    { type: 'EMC AlphaStor command injection', source: 'United States', source_co: 'US', target: 'United States', target_co: 'US', action: 'BLOCKED', category: 'exploit' },
+    { type: 'OpenSSL TLS Downgrade Attack', source: 'Canada', source_co: 'CA', target: 'Russia', target_co: 'RU', action: 'DETECTED', category: 'exploit' },
+    { type: 'Apache Log4j RCE (CVE-2021-44228)', source: 'China', source_co: 'CN', target: 'Germany', target_co: 'DE', action: 'QUARANTINED', category: 'exploit' },
+    { type: 'SQL Injection via Web Form', source: 'Brazil', source_co: 'BR', target: 'France', target_co: 'FR', action: 'BLOCKED', category: 'exploit' },
+    { type: 'Emotet Trojan Distribution', source: 'Ukraine', source_co: 'UA', target: 'United Kingdom', target_co: 'GB', action: 'QUARANTINED', category: 'malware' },
+    { type: 'Dridex Banking Trojan C2', source: 'Russia', source_co: 'RU', target: 'Japan', target_co: 'JP', action: 'ISOLATED', category: 'botnet' },
+    { type: 'WordPress Remote Code Execution', source: 'Netherlands', source_co: 'NL', target: 'India', target_co: 'IN', action: 'BLOCKED', category: 'exploit' },
+    { type: 'SSH Brute Force Attack', source: 'Vietnam', source_co: 'VN', target: 'Singapore', target_co: 'SG', action: 'BLOCKED', category: 'exploit' },
+    { type: 'DNS Amplification DDoS', source: 'South Korea', source_co: 'KR', target: 'Australia', target_co: 'AU', action: 'MITIGATED', category: 'exploit' },
 ];
 
 // Country code → flag emoji
 const countryFlag = (co) => {
-    if (!co || co.length !== 2) return '🌐';
+    if (!co || co.length !== 2) return '';
     return String.fromCodePoint(...[...co.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
 };
 
-function renderTicker(threats, isLive = false) {
+function renderTicker(threats) {
     const track = document.getElementById('ticker-track');
+    if (!track) return;
     track.innerHTML = '';
 
     // Duplicate for seamless scroll loop
@@ -357,7 +368,7 @@ function renderTicker(threats, isLive = false) {
         }[t.action] || '';
 
         const categoryTag = t.category
-            ? `<span class="ts">${t.category.toUpperCase()}</span>`
+            ? `<span class="ts">${t.category}</span>`
             : '';
 
         // Show source → target country with flags
@@ -390,17 +401,17 @@ async function initThreatTicker() {
     const liveThreats = await fetchLiveThreats();
 
     if (liveThreats) {
-        renderTicker(liveThreats, true);
+        renderTicker(liveThreats);
         console.log(`[beout.ai] 🔴 Live threat feed: ${liveThreats.length} attacks from Check Point ThreatCloud`);
     } else {
-        renderTicker(FALLBACK_THREATS, false);
+        renderTicker(FALLBACK_THREATS);
         console.log('[beout.ai] Using static threat data (fallback)');
     }
 
     // Refresh every 2 minutes
     setInterval(async () => {
         const fresh = await fetchLiveThreats();
-        if (fresh) renderTicker(fresh, true);
+        if (fresh) renderTicker(fresh);
     }, 2 * 60 * 1000);
 }
 
@@ -449,12 +460,16 @@ function initCurrentYear() {
 
 function initForm() {
     const form = document.getElementById('signup-form');
+    if (!form) return;
+
     form.addEventListener('submit', e => {
         e.preventDefault();
         const btn = document.getElementById('cta-button');
         const success = document.getElementById('signup-success');
+        if (!btn || !success) return;
 
-        btn.querySelector('.btn-text').textContent = currentLang === 'ar' ? 'جارٍ الإرسال...' : 'Sending...';
+        const btnText = btn.querySelector('.btn-text');
+        if (btnText) btnText.textContent = currentLang === 'ar' ? 'جارٍ الإرسال...' : 'Sending...';
         btn.disabled = true;
 
         setTimeout(() => {

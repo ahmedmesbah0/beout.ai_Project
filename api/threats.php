@@ -7,7 +7,7 @@
  * Caches results for 2 minutes to avoid hammering the endpoint.
  */
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Cache-Control: public, max-age=120');
 
@@ -21,7 +21,7 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTTL) {
     exit;
 }
 
-// --- Country code to name mapping ---
+// --- Country code to name mapping (full ISO 3166-1) ---
 $countryNames = [
     'AF' => 'Afghanistan', 'AL' => 'Albania', 'DZ' => 'Algeria', 'AS' => 'American Samoa',
     'AD' => 'Andorra', 'AO' => 'Angola', 'AI' => 'Anguilla', 'AQ' => 'Antarctica',
@@ -35,8 +35,8 @@ $countryNames = [
     'CV' => 'Cape Verde', 'KY' => 'Cayman Islands', 'CF' => 'Central African Republic',
     'TD' => 'Chad', 'CL' => 'Chile', 'CN' => 'China', 'CO' => 'Colombia',
     'KM' => 'Comoros', 'CG' => 'Congo', 'CD' => 'DR Congo', 'CK' => 'Cook Islands',
-    'CR' => 'Costa Rica', 'CI' => 'Côte d\'Ivoire', 'HR' => 'Croatia', 'CU' => 'Cuba',
-    'CW' => 'Curaçao', 'CY' => 'Cyprus', 'CZ' => 'Czech Republic', 'DK' => 'Denmark',
+    'CR' => 'Costa Rica', 'CI' => 'Ivory Coast', 'HR' => 'Croatia', 'CU' => 'Cuba',
+    'CW' => 'Curacao', 'CY' => 'Cyprus', 'CZ' => 'Czech Republic', 'DK' => 'Denmark',
     'DJ' => 'Djibouti', 'DM' => 'Dominica', 'DO' => 'Dominican Republic', 'EC' => 'Ecuador',
     'EG' => 'Egypt', 'SV' => 'El Salvador', 'GQ' => 'Equatorial Guinea', 'ER' => 'Eritrea',
     'EE' => 'Estonia', 'SZ' => 'Eswatini', 'ET' => 'Ethiopia', 'FK' => 'Falkland Islands',
@@ -66,11 +66,11 @@ $countryNames = [
     'OM' => 'Oman', 'PK' => 'Pakistan', 'PW' => 'Palau', 'PS' => 'Palestine',
     'PA' => 'Panama', 'PG' => 'Papua New Guinea', 'PY' => 'Paraguay', 'PE' => 'Peru',
     'PH' => 'Philippines', 'PL' => 'Poland', 'PT' => 'Portugal', 'PR' => 'Puerto Rico',
-    'QA' => 'Qatar', 'RE' => 'Réunion', 'RO' => 'Romania', 'RU' => 'Russia',
-    'RW' => 'Rwanda', 'BL' => 'Saint Barthélemy', 'SH' => 'Saint Helena',
+    'QA' => 'Qatar', 'RE' => 'Reunion', 'RO' => 'Romania', 'RU' => 'Russia',
+    'RW' => 'Rwanda', 'BL' => 'Saint Barthelemy', 'SH' => 'Saint Helena',
     'KN' => 'Saint Kitts & Nevis', 'LC' => 'Saint Lucia', 'MF' => 'Saint Martin',
     'PM' => 'Saint Pierre & Miquelon', 'VC' => 'Saint Vincent & Grenadines',
-    'WS' => 'Samoa', 'SM' => 'San Marino', 'ST' => 'São Tomé & Príncipe',
+    'WS' => 'Samoa', 'SM' => 'San Marino', 'ST' => 'Sao Tome & Principe',
     'SA' => 'Saudi Arabia', 'SN' => 'Senegal', 'RS' => 'Serbia', 'SC' => 'Seychelles',
     'SL' => 'Sierra Leone', 'SG' => 'Singapore', 'SX' => 'Sint Maarten', 'SK' => 'Slovakia',
     'SI' => 'Slovenia', 'SB' => 'Solomon Islands', 'SO' => 'Somalia', 'ZA' => 'South Africa',
@@ -85,8 +85,6 @@ $countryNames = [
     'VN' => 'Vietnam', 'VG' => 'British Virgin Islands', 'VI' => 'U.S. Virgin Islands',
     'WF' => 'Wallis & Futuna', 'EH' => 'Western Sahara', 'YE' => 'Yemen', 'ZM' => 'Zambia',
     'ZW' => 'Zimbabwe', 'XK' => 'Kosovo',
-    // Check Point regional/state codes
-    'HE' => 'Hesse (DE)', 'Z' => 'Central (IL)',
 ];
 
 // --- Map attack type to action ---
@@ -110,7 +108,7 @@ function fetchCheckPointFeed() {
     curl_setopt_array($ch, [
         CURLOPT_URL            => $url,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 12,        // Read for 12 seconds then stop
+        CURLOPT_TIMEOUT        => 12,
         CURLOPT_CONNECTTIMEOUT => 5,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_USERAGENT      => 'Mozilla/5.0 (compatible; beout.ai-ticker/2.0)',
@@ -122,11 +120,18 @@ function fetchCheckPointFeed() {
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
     curl_close($ch);
 
-    if ($httpCode !== 200 || !$response) return [];
+    if ($httpCode !== 200 || !$response) {
+        error_log("[beout.ai] Check Point feed error: HTTP $httpCode - $curlError");
+        return [];
+    }
 
-    // Parse SSE events
+    // Normalize line endings (\r\n → \n) then parse SSE events
+    $response = str_replace("\r\n", "\n", $response);
+    $response = str_replace("\r", "\n", $response);
+
     $attacks = [];
     $lines = explode("\n", $response);
     $currentEvent = null;
@@ -153,21 +158,21 @@ function fetchCheckPointFeed() {
 }
 
 // --- Main ---
-global $countryNames;
-
 $rawAttacks = fetchCheckPointFeed();
 $threats = [];
 $seen = []; // Deduplicate by attack name + source country
 
 foreach ($rawAttacks as $attack) {
-    $key = ($attack['a_n'] ?? '') . '_' . ($attack['s_co'] ?? '');
+    // Use country code (s_co), not state/region code (s_s) for source
+    $srcCountry = $attack['s_co'] ?? '??';
+    $dstCountry = $attack['d_co'] ?? '??';
+
+    $key = ($attack['a_n'] ?? '') . '_' . $srcCountry . '_' . $dstCountry;
     if (isset($seen[$key])) continue;
     $seen[$key] = true;
 
-    $srcCountry = $attack['s_co'] ?? '??';
-    $dstCountry = $attack['d_co'] ?? '??';
-    $srcName    = $countryNames[$srcCountry] ?? $srcCountry;
-    $dstName    = $countryNames[$dstCountry] ?? $dstCountry;
+    $srcName = $countryNames[$srcCountry] ?? $srcCountry;
+    $dstName = $countryNames[$dstCountry] ?? $dstCountry;
 
     $threats[] = [
         'type'       => $attack['a_n'] ?? 'Unknown Attack',
