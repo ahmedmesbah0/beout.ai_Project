@@ -283,6 +283,13 @@ function initParticles() {
 /* ============================================
    COUNTDOWN
    ============================================ */
+function initLaunchStart() {
+    // Store the moment the countdown was first seen
+    if (!localStorage.getItem('launchStart')) {
+        localStorage.setItem('launchStart', new Date().toISOString());
+    }
+}
+
 function initCountdown() {
     const launch = new Date('2026-10-16T00:00:00');
 
