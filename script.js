@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollReveal();
     initForm();
     initLangToggle();
+    initCurrentYear();
     // Typing starts after a short delay
     setTimeout(() => initTyping(), 1200);
 });
@@ -283,7 +284,7 @@ function initParticles() {
    COUNTDOWN
    ============================================ */
 function initCountdown() {
-    const launch = new Date('2026-10-10T00:00:00');
+    const launch = new Date('2026-10-16T00:00:00');
 
     function tick() {
         const diff = launch - new Date();
@@ -364,6 +365,11 @@ function animateNum(el) {
 /* ============================================
    EMAIL FORM
    ============================================ */
+function initCurrentYear() {
+    const yearEl = document.getElementById('current-year');
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
+}
+
 function initForm() {
     const form = document.getElementById('signup-form');
     form.addEventListener('submit', e => {
