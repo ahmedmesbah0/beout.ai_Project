@@ -1,9 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node *)",
-      "Bash(npx html-validator *)",
-      "Bash(htmlhint index.html)"
+      "Bash(node *)"
     ]
   }
 }
