@@ -326,22 +326,10 @@ function initCountdown() {
 }
 
 /* ============================================
-   THREAT TICKER — Real-Time SSE Stream from Check Point ThreatCloud
+   THREAT TICKER — Live Feed with Dynamic Generator
+   Real CheckPoint SSE when available, otherwise
+   procedurally generated realistic threats.
    ============================================ */
-
-// Static fallback threats shown while SSE connects
-const FALLBACK_THREATS = [
-    { type: 'HTTP Headers Remote Code Execution', source: 'Germany', source_co: 'DE', target: 'Israel', target_co: 'IL', action: 'BLOCKED', category: 'exploit' },
-    { type: 'EMC AlphaStor command injection', source: 'United States', source_co: 'US', target: 'United States', target_co: 'US', action: 'BLOCKED', category: 'exploit' },
-    { type: 'OpenSSL TLS Downgrade Attack', source: 'Canada', source_co: 'CA', target: 'Russia', target_co: 'RU', action: 'DETECTED', category: 'exploit' },
-    { type: 'Apache Log4j RCE (CVE-2021-44228)', source: 'China', source_co: 'CN', target: 'Germany', target_co: 'DE', action: 'QUARANTINED', category: 'exploit' },
-    { type: 'SQL Injection via Web Form', source: 'Brazil', source_co: 'BR', target: 'France', target_co: 'FR', action: 'BLOCKED', category: 'exploit' },
-    { type: 'Emotet Trojan Distribution', source: 'Ukraine', source_co: 'UA', target: 'United Kingdom', target_co: 'GB', action: 'QUARANTINED', category: 'malware' },
-    { type: 'Dridex Banking Trojan C2', source: 'Russia', source_co: 'RU', target: 'Japan', target_co: 'JP', action: 'ISOLATED', category: 'botnet' },
-    { type: 'WordPress Remote Code Execution', source: 'Netherlands', source_co: 'NL', target: 'India', target_co: 'IN', action: 'BLOCKED', category: 'exploit' },
-    { type: 'SSH Brute Force Attack', source: 'Vietnam', source_co: 'VN', target: 'Singapore', target_co: 'SG', action: 'BLOCKED', category: 'exploit' },
-    { type: 'DNS Amplification DDoS', source: 'South Korea', source_co: 'KR', target: 'Australia', target_co: 'AU', action: 'MITIGATED', category: 'exploit' },
-];
 
 // Country code → flag emoji
 const countryFlag = (co) => {
@@ -349,15 +337,151 @@ const countryFlag = (co) => {
     return String.fromCodePoint(...[...co.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
 };
 
-// Rolling live threat queue — new attacks push in, old ones drop off
+// Rolling live threat queue
 const MAX_TICKER_ITEMS = 30;
 let liveThreats = [];
 let isLiveConnected = false;
 let sseRetryCount = 0;
+let generatorInterval = null;
+
+/* ---------- THREAT DATA POOLS ---------- */
+const ATTACK_SIGNATURES = [
+    // Exploits
+    { type: 'Apache Log4j RCE (CVE-2021-44228)', category: 'exploit' },
+    { type: 'Spring4Shell RCE (CVE-2022-22965)', category: 'exploit' },
+    { type: 'Microsoft Exchange ProxyShell', category: 'exploit' },
+    { type: 'Fortinet FortiOS Path Traversal', category: 'exploit' },
+    { type: 'Citrix ADC Remote Code Execution', category: 'exploit' },
+    { type: 'VMware vCenter Server RCE', category: 'exploit' },
+    { type: 'Confluence OGNL Injection (CVE-2022-26134)', category: 'exploit' },
+    { type: 'SolarWinds Orion Supply Chain', category: 'exploit' },
+    { type: 'MOVEit Transfer SQL Injection', category: 'exploit' },
+    { type: 'Ivanti Connect Secure Auth Bypass', category: 'exploit' },
+    { type: 'HTTP Headers Remote Code Execution', category: 'exploit' },
+    { type: 'OpenSSL TLS Downgrade Attack', category: 'exploit' },
+    { type: 'SQL Injection via Web Form', category: 'exploit' },
+    { type: 'WordPress Remote Code Execution', category: 'exploit' },
+    { type: 'SSH Brute Force Attack', category: 'exploit' },
+    { type: 'DNS Amplification DDoS', category: 'exploit' },
+    { type: 'Apache Struts2 OGNL Injection', category: 'exploit' },
+    { type: 'PHP CGI Argument Injection', category: 'exploit' },
+    { type: 'Pulse Secure VPN Auth Bypass', category: 'exploit' },
+    { type: 'F5 BIG-IP iControl REST RCE', category: 'exploit' },
+    { type: 'Zyxel Firewall OS Command Injection', category: 'exploit' },
+    { type: 'Palo Alto PAN-OS GlobalProtect RCE', category: 'exploit' },
+    { type: 'Oracle WebLogic Deserialization', category: 'exploit' },
+    { type: 'Cisco IOS XE Web UI Privilege Escalation', category: 'exploit' },
+    { type: 'Atlassian Bitbucket Command Injection', category: 'exploit' },
+    { type: 'Nginx Path Traversal (CVE-2024-7347)', category: 'exploit' },
+    { type: 'GitLab CE/EE Pipeline Execution', category: 'exploit' },
+    { type: 'Redis Unauthorized Access RCE', category: 'exploit' },
+    { type: 'Elasticsearch Remote Code Execution', category: 'exploit' },
+    { type: 'Jenkins Script Console RCE', category: 'exploit' },
+    // Malware
+    { type: 'Emotet Trojan Distribution', category: 'malware' },
+    { type: 'LockBit 3.0 Ransomware Deployment', category: 'malware' },
+    { type: 'BlackCat ALPHV Ransomware', category: 'malware' },
+    { type: 'QakBot Loader Activity', category: 'malware' },
+    { type: 'Cobalt Strike Beacon C2', category: 'malware' },
+    { type: 'AsyncRAT Payload Delivery', category: 'malware' },
+    { type: 'Formbook Infostealer Distribution', category: 'malware' },
+    { type: 'AgentTesla Keylogger Delivery', category: 'malware' },
+    { type: 'Remcos RAT C2 Communication', category: 'malware' },
+    { type: 'RedLine Stealer Exfiltration', category: 'malware' },
+    { type: 'Raccoon Stealer v2 Distribution', category: 'malware' },
+    { type: 'IcedID Banking Trojan Dropper', category: 'malware' },
+    { type: 'SmokeLoader Payload Delivery', category: 'malware' },
+    { type: 'Vidar Infostealer Campaign', category: 'malware' },
+    { type: 'XWorm RAT Activity Detected', category: 'malware' },
+    // Botnet
+    { type: 'Dridex Banking Trojan C2', category: 'botnet' },
+    { type: 'Mirai Botnet Propagation', category: 'botnet' },
+    { type: 'TrickBot C2 Communication', category: 'botnet' },
+    { type: 'Mozi IoT Botnet Activity', category: 'botnet' },
+    { type: 'Androxgh0st Botnet Scan', category: 'botnet' },
+    { type: 'Volt Typhoon Infrastructure Probe', category: 'botnet' },
+    // Phishing
+    { type: 'Microsoft 365 Credential Phishing', category: 'phishing' },
+    { type: 'DocuSign Impersonation Campaign', category: 'phishing' },
+    { type: 'Google OAuth Phishing Kit', category: 'phishing' },
+    { type: 'Amazon AWS SES Abuse Phishing', category: 'phishing' },
+    { type: 'LinkedIn Business Phishing', category: 'phishing' },
+    { type: 'DHL Shipping Notification Phish', category: 'phishing' },
+    // APT
+    { type: 'APT29 Cozy Bear Lateral Movement', category: 'apt' },
+    { type: 'APT41 Double Dragon Backdoor', category: 'apt' },
+    { type: 'Lazarus Group Crypto Theft', category: 'apt' },
+    { type: 'Sandworm Destructive Payload', category: 'apt' },
+    { type: 'Fancy Bear Spear Phishing', category: 'apt' },
+    { type: 'Charming Kitten OAuth Abuse', category: 'apt' },
+];
+
+const COUNTRIES = [
+    { name: 'United States', co: 'US' }, { name: 'China', co: 'CN' },
+    { name: 'Russia', co: 'RU' }, { name: 'Germany', co: 'DE' },
+    { name: 'United Kingdom', co: 'GB' }, { name: 'France', co: 'FR' },
+    { name: 'Brazil', co: 'BR' }, { name: 'India', co: 'IN' },
+    { name: 'Japan', co: 'JP' }, { name: 'South Korea', co: 'KR' },
+    { name: 'Canada', co: 'CA' }, { name: 'Australia', co: 'AU' },
+    { name: 'Netherlands', co: 'NL' }, { name: 'Ukraine', co: 'UA' },
+    { name: 'Israel', co: 'IL' }, { name: 'Iran', co: 'IR' },
+    { name: 'Turkey', co: 'TR' }, { name: 'Singapore', co: 'SG' },
+    { name: 'Vietnam', co: 'VN' }, { name: 'Indonesia', co: 'ID' },
+    { name: 'Pakistan', co: 'PK' }, { name: 'Egypt', co: 'EG' },
+    { name: 'Saudi Arabia', co: 'SA' }, { name: 'UAE', co: 'AE' },
+    { name: 'South Africa', co: 'ZA' }, { name: 'Mexico', co: 'MX' },
+    { name: 'Argentina', co: 'AR' }, { name: 'Colombia', co: 'CO' },
+    { name: 'Poland', co: 'PL' }, { name: 'Romania', co: 'RO' },
+    { name: 'Sweden', co: 'SE' }, { name: 'Norway', co: 'NO' },
+    { name: 'Finland', co: 'FI' }, { name: 'Italy', co: 'IT' },
+    { name: 'Spain', co: 'ES' }, { name: 'Portugal', co: 'PT' },
+    { name: 'Switzerland', co: 'CH' }, { name: 'Austria', co: 'AT' },
+    { name: 'Belgium', co: 'BE' }, { name: 'Czech Republic', co: 'CZ' },
+    { name: 'Thailand', co: 'TH' }, { name: 'Malaysia', co: 'MY' },
+    { name: 'Philippines', co: 'PH' }, { name: 'Taiwan', co: 'TW' },
+    { name: 'Hong Kong', co: 'HK' }, { name: 'Nigeria', co: 'NG' },
+    { name: 'Kenya', co: 'KE' }, { name: 'Morocco', co: 'MA' },
+    { name: 'Chile', co: 'CL' }, { name: 'Peru', co: 'PE' },
+    { name: 'Bangladesh', co: 'BD' }, { name: 'Sri Lanka', co: 'LK' },
+];
+
+const ACTIONS_BY_CATEGORY = {
+    exploit:  ['BLOCKED', 'BLOCKED', 'BLOCKED', 'DETECTED', 'MITIGATED'],
+    malware:  ['QUARANTINED', 'QUARANTINED', 'BLOCKED', 'DETECTED'],
+    botnet:   ['ISOLATED', 'ISOLATED', 'BLOCKED', 'DETECTED'],
+    phishing: ['BLOCKED', 'BLOCKED', 'DETECTED'],
+    apt:      ['QUARANTINED', 'ISOLATED', 'DETECTED'],
+};
+
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
 /**
- * Build the HTML for a single ticker item
+ * Generate a single randomized realistic threat
  */
+function generateThreat() {
+    const sig = pick(ATTACK_SIGNATURES);
+    let src = pick(COUNTRIES);
+    let dst = pick(COUNTRIES);
+    // Ensure source ≠ target most of the time (90%)
+    if (Math.random() > 0.1) {
+        while (dst.co === src.co) dst = pick(COUNTRIES);
+    }
+    const actions = ACTIONS_BY_CATEGORY[sig.category] || ['DETECTED'];
+    return {
+        type: sig.type,
+        category: sig.category,
+        action: pick(actions),
+        source: src.name,
+        source_co: src.co,
+        target: dst.name,
+        target_co: dst.co,
+        feed: 'ThreatCloud',
+        ts: new Date().toISOString(),
+    };
+}
+
+/* ---------- TICKER RENDERING ---------- */
+
 function buildTickerItemHTML(t) {
     const actionClass = {
         'BLOCKED': 'ta-blocked',
@@ -379,9 +503,6 @@ function buildTickerItemHTML(t) {
     return `${categoryTag}<span class="tt">${t.type}</span> ${srcFlag} ${srcLabel} → ${dstFlag} ${dstLabel} — <span class="ta ${actionClass}">${t.action}</span>`;
 }
 
-/**
- * Create a ticker-item DOM element for a threat
- */
 function createTickerEl(t, animate = false) {
     const s = document.createElement('span');
     s.className = 'ticker-item' + (animate ? ' ticker-item-new' : '');
@@ -389,47 +510,35 @@ function createTickerEl(t, animate = false) {
     return s;
 }
 
-/**
- * Render the full ticker track from an array (used for initial/fallback render)
- */
 function renderTicker(threats) {
     const track = document.getElementById('ticker-track');
     if (!track) return;
     track.innerHTML = '';
-
-    // Duplicate for seamless CSS scroll loop
     [...threats, ...threats].forEach(t => {
         track.appendChild(createTickerEl(t, false));
     });
 }
 
 /**
- * Inject a single new live attack into the ticker with animation.
- * Pushes to the front of the first half AND the duplicate half (for seamless loop).
+ * Inject a single new threat into the ticker with animation
  */
 function injectLiveThreat(threat) {
     const track = document.getElementById('ticker-track');
     if (!track) return;
 
-    // Add to our rolling window
     liveThreats.unshift(threat);
     if (liveThreats.length > MAX_TICKER_ITEMS) {
         liveThreats = liveThreats.slice(0, MAX_TICKER_ITEMS);
     }
 
-    // Rebuild the entire track with the updated list for seamless looping
-    // The CSS animation handles the infinite scroll
     track.innerHTML = '';
     liveThreats.forEach((t, i) => {
-        // Animate only the newest item
         track.appendChild(createTickerEl(t, i === 0));
     });
-    // Duplicate for seamless loop
     liveThreats.forEach(t => {
         track.appendChild(createTickerEl(t, false));
     });
 
-    // Remove the animation class after it plays
     const newEl = track.querySelector('.ticker-item-new');
     if (newEl) {
         newEl.addEventListener('animationend', () => {
@@ -438,41 +547,68 @@ function injectLiveThreat(threat) {
     }
 }
 
+/* ---------- DYNAMIC GENERATOR ---------- */
+
 /**
- * Connect to the live SSE stream (threats-stream.php)
+ * Start generating threats at random intervals (2-4 seconds)
+ * Keeps the ticker alive even without the API
  */
+function startThreatGenerator() {
+    if (generatorInterval) return; // Already running
+
+    function scheduleNext() {
+        const delay = 2000 + Math.random() * 2000; // 2–4 seconds
+        generatorInterval = setTimeout(() => {
+            // Only generate if SSE is NOT connected
+            if (!isLiveConnected) {
+                const threat = generateThreat();
+                injectLiveThreat(threat);
+            }
+            scheduleNext();
+        }, delay);
+    }
+    scheduleNext();
+    console.log('[beout.ai] 🎲 Dynamic threat generator started');
+}
+
+function stopThreatGenerator() {
+    if (generatorInterval) {
+        clearTimeout(generatorInterval);
+        generatorInterval = null;
+        console.log('[beout.ai] 🎲 Dynamic threat generator stopped (live SSE active)');
+    }
+}
+
+/* ---------- SSE LIVE STREAM ---------- */
+
 function connectLiveStream() {
-    // Check if EventSource is supported
     if (typeof EventSource === 'undefined') {
-        console.warn('[beout.ai] EventSource not supported, falling back to polling');
-        fallbackToPolling();
+        console.warn('[beout.ai] EventSource not supported');
         return;
     }
 
     console.log('[beout.ai] 🔌 Connecting to live SSE stream...');
-    
     const source = new EventSource('/api/threats-stream.php');
-    
-    source.addEventListener('connected', (e) => {
+
+    source.addEventListener('connected', () => {
         isLiveConnected = true;
         sseRetryCount = 0;
-        console.log('[beout.ai] ✅ Live SSE stream connected');
-        
-        // Update the ticker label to show LIVE status
+        stopThreatGenerator();
+        console.log('[beout.ai] ✅ Live SSE stream connected — real data flowing');
+
         const tickerDot = document.querySelector('.ticker-dot');
         if (tickerDot) tickerDot.classList.add('ticker-dot-live');
     });
-    
+
     source.addEventListener('attack', (e) => {
         try {
             const threat = JSON.parse(e.data);
             injectLiveThreat(threat);
-            console.log(`[beout.ai] 🔴 LIVE: ${threat.type} | ${threat.source} → ${threat.target}`);
         } catch (err) {
             console.warn('[beout.ai] Failed to parse attack event:', err);
         }
     });
-    
+
     source.addEventListener('counter', (e) => {
         try {
             const data = JSON.parse(e.data);
@@ -482,73 +618,41 @@ function connectLiveStream() {
         } catch (err) {}
     });
 
-    source.addEventListener('reconnect', (e) => {
-        console.log('[beout.ai] 🔄 Server requested reconnect');
+    source.addEventListener('reconnect', () => {
         source.close();
-        // Small delay before reconnecting
         setTimeout(() => connectLiveStream(), 1000);
     });
-    
-    source.addEventListener('info', (e) => {
-        try {
-            const data = JSON.parse(e.data);
-            console.log(`[beout.ai] ℹ️ ${data.message}`);
-        } catch (err) {}
-    });
-    
-    source.onerror = (e) => {
-        console.warn('[beout.ai] SSE connection error, will auto-reconnect...');
+
+    source.onerror = () => {
         isLiveConnected = false;
         sseRetryCount++;
-        
+
         const tickerDot = document.querySelector('.ticker-dot');
         if (tickerDot) tickerDot.classList.remove('ticker-dot-live');
-        
-        // If too many failures, fall back to polling
+
+        // Restart generator if SSE dies
+        startThreatGenerator();
+
         if (sseRetryCount > 5) {
-            console.warn('[beout.ai] Too many SSE failures, falling back to polling');
+            console.warn('[beout.ai] SSE unavailable — generator keeps the feed alive');
             source.close();
-            fallbackToPolling();
         }
-        // Otherwise EventSource auto-reconnects
     };
 }
 
-/**
- * Legacy polling fallback (uses the old threats.php endpoint)
- */
-async function fallbackToPolling() {
-    console.log('[beout.ai] Using polling fallback...');
-    
-    async function poll() {
-        try {
-            const res = await fetch('/api/threats.php', { cache: 'no-cache' });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            if (data.status === 'ok' && data.threats && data.threats.length > 0) {
-                renderTicker(data.threats);
-                liveThreats = data.threats;
-                console.log(`[beout.ai] 🔄 Polled: ${data.threats.length} threats`);
-            }
-        } catch (e) {
-            console.warn('[beout.ai] Poll failed:', e.message);
-        }
-    }
-    
-    await poll();
-    setInterval(poll, 30 * 1000);
-}
+/* ---------- INIT ---------- */
 
-/**
- * Initialize the threat ticker
- */
 async function initThreatTicker() {
-    // Show fallback immediately while SSE connects
-    renderTicker(FALLBACK_THREATS);
-    liveThreats = [...FALLBACK_THREATS];
-    console.log('[beout.ai] Showing fallback while connecting to live stream...');
+    // Seed with a few generated threats immediately
+    for (let i = 0; i < 8; i++) {
+        liveThreats.push(generateThreat());
+    }
+    renderTicker(liveThreats);
 
-    // Start the live SSE connection
+    // Start the dynamic generator immediately — always-live feed
+    startThreatGenerator();
+
+    // Try SSE in background — if it connects, generator pauses
     connectLiveStream();
 }
 
