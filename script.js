@@ -326,10 +326,10 @@ function initCountdown() {
 }
 
 /* ============================================
-   THREAT TICKER — Real-Time Check Point ThreatCloud
+   THREAT TICKER — Real-Time SSE Stream from Check Point ThreatCloud
    ============================================ */
 
-// Static fallback threats with country codes for proper flag rendering
+// Static fallback threats shown while SSE connects
 const FALLBACK_THREATS = [
     { type: 'HTTP Headers Remote Code Execution', source: 'Germany', source_co: 'DE', target: 'Israel', target_co: 'IL', action: 'BLOCKED', category: 'exploit' },
     { type: 'EMC AlphaStor command injection', source: 'United States', source_co: 'US', target: 'United States', target_co: 'US', action: 'BLOCKED', category: 'exploit' },
@@ -349,74 +349,207 @@ const countryFlag = (co) => {
     return String.fromCodePoint(...[...co.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
 };
 
+// Rolling live threat queue — new attacks push in, old ones drop off
+const MAX_TICKER_ITEMS = 30;
+let liveThreats = [];
+let isLiveConnected = false;
+let sseRetryCount = 0;
+
+/**
+ * Build the HTML for a single ticker item
+ */
+function buildTickerItemHTML(t) {
+    const actionClass = {
+        'BLOCKED': 'ta-blocked',
+        'QUARANTINED': 'ta-quarantined',
+        'ISOLATED': 'ta-isolated',
+        'DETECTED': 'ta-detected',
+        'MITIGATED': 'ta-mitigated',
+    }[t.action] || '';
+
+    const categoryTag = t.category
+        ? `<span class="ts">${t.category}</span>`
+        : '';
+
+    const srcFlag = t.source_co ? countryFlag(t.source_co) : '';
+    const dstFlag = t.target_co ? countryFlag(t.target_co) : '';
+    const srcLabel = t.source || 'Unknown';
+    const dstLabel = t.target || 'Unknown';
+
+    return `${categoryTag}<span class="tt">${t.type}</span> ${srcFlag} ${srcLabel} → ${dstFlag} ${dstLabel} — <span class="ta ${actionClass}">${t.action}</span>`;
+}
+
+/**
+ * Create a ticker-item DOM element for a threat
+ */
+function createTickerEl(t, animate = false) {
+    const s = document.createElement('span');
+    s.className = 'ticker-item' + (animate ? ' ticker-item-new' : '');
+    s.innerHTML = buildTickerItemHTML(t);
+    return s;
+}
+
+/**
+ * Render the full ticker track from an array (used for initial/fallback render)
+ */
 function renderTicker(threats) {
     const track = document.getElementById('ticker-track');
     if (!track) return;
     track.innerHTML = '';
 
-    // Duplicate for seamless scroll loop
+    // Duplicate for seamless CSS scroll loop
     [...threats, ...threats].forEach(t => {
-        const s = document.createElement('span');
-        s.className = 'ticker-item';
-
-        const actionClass = {
-            'BLOCKED': 'ta-blocked',
-            'QUARANTINED': 'ta-quarantined',
-            'ISOLATED': 'ta-isolated',
-            'DETECTED': 'ta-detected',
-            'MITIGATED': 'ta-mitigated',
-        }[t.action] || '';
-
-        const categoryTag = t.category
-            ? `<span class="ts">${t.category}</span>`
-            : '';
-
-        // Show source → target country with flags
-        const srcFlag = t.source_co ? countryFlag(t.source_co) : '';
-        const dstFlag = t.target_co ? countryFlag(t.target_co) : '';
-        const srcLabel = t.source || 'Unknown';
-        const dstLabel = t.target || 'Unknown';
-
-        s.innerHTML = `${categoryTag}<span class="tt">${t.type}</span> ${srcFlag} ${srcLabel} → ${dstFlag} ${dstLabel} — <span class="ta ${actionClass}">${t.action}</span>`;
-        track.appendChild(s);
+        track.appendChild(createTickerEl(t, false));
     });
 }
 
-async function fetchLiveThreats() {
-    try {
-        const res = await fetch('/api/threats.php', { cache: 'no-cache' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (data.status === 'ok' && data.threats && data.threats.length > 0) {
-            return data.threats;
-        }
-    } catch (e) {
-        console.warn('[beout.ai] Live threat feed unavailable, using fallback:', e.message);
+/**
+ * Inject a single new live attack into the ticker with animation.
+ * Pushes to the front of the first half AND the duplicate half (for seamless loop).
+ */
+function injectLiveThreat(threat) {
+    const track = document.getElementById('ticker-track');
+    if (!track) return;
+
+    // Add to our rolling window
+    liveThreats.unshift(threat);
+    if (liveThreats.length > MAX_TICKER_ITEMS) {
+        liveThreats = liveThreats.slice(0, MAX_TICKER_ITEMS);
     }
-    return null;
+
+    // Rebuild the entire track with the updated list for seamless looping
+    // The CSS animation handles the infinite scroll
+    track.innerHTML = '';
+    liveThreats.forEach((t, i) => {
+        // Animate only the newest item
+        track.appendChild(createTickerEl(t, i === 0));
+    });
+    // Duplicate for seamless loop
+    liveThreats.forEach(t => {
+        track.appendChild(createTickerEl(t, false));
+    });
+
+    // Remove the animation class after it plays
+    const newEl = track.querySelector('.ticker-item-new');
+    if (newEl) {
+        newEl.addEventListener('animationend', () => {
+            newEl.classList.remove('ticker-item-new');
+        }, { once: true });
+    }
 }
 
-async function initThreatTicker() {
-    // Show fallback immediately while first live fetch loads (~20s)
-    renderTicker(FALLBACK_THREATS);
-    console.log('[beout.ai] Showing fallback while loading live feed...');
-
-    // Fetch live data (takes ~20s because PHP reads the SSE stream)
-    const liveThreats = await fetchLiveThreats();
-
-    if (liveThreats) {
-        renderTicker(liveThreats);
-        console.log(`[beout.ai] 🔴 LIVE: ${liveThreats.length} real attacks from Check Point ThreatCloud`);
+/**
+ * Connect to the live SSE stream (threats-stream.php)
+ */
+function connectLiveStream() {
+    // Check if EventSource is supported
+    if (typeof EventSource === 'undefined') {
+        console.warn('[beout.ai] EventSource not supported, falling back to polling');
+        fallbackToPolling();
+        return;
     }
 
-    // Refresh with new live data every 30 seconds
-    setInterval(async () => {
-        const fresh = await fetchLiveThreats();
-        if (fresh && fresh.length > 0) {
-            renderTicker(fresh);
-            console.log(`[beout.ai] 🔄 Refreshed: ${fresh.length} live attacks`);
+    console.log('[beout.ai] 🔌 Connecting to live SSE stream...');
+    
+    const source = new EventSource('/api/threats-stream.php');
+    
+    source.addEventListener('connected', (e) => {
+        isLiveConnected = true;
+        sseRetryCount = 0;
+        console.log('[beout.ai] ✅ Live SSE stream connected');
+        
+        // Update the ticker label to show LIVE status
+        const tickerDot = document.querySelector('.ticker-dot');
+        if (tickerDot) tickerDot.classList.add('ticker-dot-live');
+    });
+    
+    source.addEventListener('attack', (e) => {
+        try {
+            const threat = JSON.parse(e.data);
+            injectLiveThreat(threat);
+            console.log(`[beout.ai] 🔴 LIVE: ${threat.type} | ${threat.source} → ${threat.target}`);
+        } catch (err) {
+            console.warn('[beout.ai] Failed to parse attack event:', err);
         }
-    }, 30 * 1000);
+    });
+    
+    source.addEventListener('counter', (e) => {
+        try {
+            const data = JSON.parse(e.data);
+            if (data.today) {
+                console.log(`[beout.ai] 📊 Global attacks today: ${data.today.toLocaleString()}`);
+            }
+        } catch (err) {}
+    });
+
+    source.addEventListener('reconnect', (e) => {
+        console.log('[beout.ai] 🔄 Server requested reconnect');
+        source.close();
+        // Small delay before reconnecting
+        setTimeout(() => connectLiveStream(), 1000);
+    });
+    
+    source.addEventListener('info', (e) => {
+        try {
+            const data = JSON.parse(e.data);
+            console.log(`[beout.ai] ℹ️ ${data.message}`);
+        } catch (err) {}
+    });
+    
+    source.onerror = (e) => {
+        console.warn('[beout.ai] SSE connection error, will auto-reconnect...');
+        isLiveConnected = false;
+        sseRetryCount++;
+        
+        const tickerDot = document.querySelector('.ticker-dot');
+        if (tickerDot) tickerDot.classList.remove('ticker-dot-live');
+        
+        // If too many failures, fall back to polling
+        if (sseRetryCount > 5) {
+            console.warn('[beout.ai] Too many SSE failures, falling back to polling');
+            source.close();
+            fallbackToPolling();
+        }
+        // Otherwise EventSource auto-reconnects
+    };
+}
+
+/**
+ * Legacy polling fallback (uses the old threats.php endpoint)
+ */
+async function fallbackToPolling() {
+    console.log('[beout.ai] Using polling fallback...');
+    
+    async function poll() {
+        try {
+            const res = await fetch('/api/threats.php', { cache: 'no-cache' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            if (data.status === 'ok' && data.threats && data.threats.length > 0) {
+                renderTicker(data.threats);
+                liveThreats = data.threats;
+                console.log(`[beout.ai] 🔄 Polled: ${data.threats.length} threats`);
+            }
+        } catch (e) {
+            console.warn('[beout.ai] Poll failed:', e.message);
+        }
+    }
+    
+    await poll();
+    setInterval(poll, 30 * 1000);
+}
+
+/**
+ * Initialize the threat ticker
+ */
+async function initThreatTicker() {
+    // Show fallback immediately while SSE connects
+    renderTicker(FALLBACK_THREATS);
+    liveThreats = [...FALLBACK_THREATS];
+    console.log('[beout.ai] Showing fallback while connecting to live stream...');
+
+    // Start the live SSE connection
+    connectLiveStream();
 }
 
 /* ============================================
