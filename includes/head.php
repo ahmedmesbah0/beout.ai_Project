@@ -7,15 +7,13 @@
     <title><?= htmlspecialchars($t['page_title']) ?></title>
     <meta name="description" content="<?= htmlspecialchars($t['meta_desc']) ?>">
     <meta name="keywords"
-        content="cybersecurity, AI, Egypt, <?= SITE_NAME ?>, HORUS, threat detection, network security, firewall, SOC, SIEM, PDPL, ISO 27001, endpoint security, FortiGate alternative">
+        content="cybersecurity, AI, Egypt, <?= SITE_NAME ?>, HORUS, threat detection, network security, firewall, SOC, SIEM, PDPL, ISO 27001, endpoint security">
     <meta name="author" content="<?= SITE_NAME ?>">
     <meta name="robots" content="index, follow">
-    <link rel="canonical" href="<?= SITE_URL ?>/<?= CURRENT_LANG === 'ar' ? '?lang=ar' : '' ?>">
+    <link rel="canonical" href="<?= SITE_URL ?>/">
 
     <!-- Hreflang for multi-language SEO -->
     <link rel="alternate" hreflang="en" href="<?= SITE_URL ?>/">
-    <link rel="alternate" hreflang="ar" href="<?= SITE_URL ?>/?lang=ar">
-    <link rel="alternate" hreflang="x-default" href="<?= SITE_URL ?>/">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
@@ -23,8 +21,7 @@
     <meta property="og:title" content="<?= htmlspecialchars($t['page_title']) ?>">
     <meta property="og:description" content="<?= htmlspecialchars($t['meta_desc']) ?>">
     <meta property="og:image" content="<?= SITE_URL ?>/assets/logo.png">
-    <meta property="og:locale" content="<?= CURRENT_LANG === 'ar' ? 'ar_EG' : 'en_US' ?>">
-    <meta property="og:locale:alternate" content="<?= CURRENT_LANG === 'ar' ? 'en_US' : 'ar_EG' ?>">
+    <meta property="og:locale" content="en_US">
     <meta property="og:site_name" content="<?= SITE_NAME ?>">
 
     <!-- Twitter Card -->
@@ -44,7 +41,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Noto+Kufi+Arabic:wght@300;400;500;600;700;800;900&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
         rel="stylesheet">
 
     <!-- Stylesheet -->

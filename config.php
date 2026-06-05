@@ -11,7 +11,7 @@ declare(strict_types=1);
 define('SITE_NAME',    'beout.ai');
 define('SITE_DOMAIN',  'beout.ai');
 define('SITE_URL',     'https://beout.ai');
-define('SITE_EMAIL',   'hello@beout.ai');
+define('SITE_EMAIL',   'contact@beout.ai');
 define('SITE_YEAR',    date('Y'));
 define('SITE_TAGLINE', "Egypt's First AI-Native Cybersecurity Company");
 
@@ -33,47 +33,9 @@ function js():  string { return JS_PATH  . '?v=' . assetVersion(JS_PATH);  }
 // ─── Theme ───────────────────────────────────
 define('THEME_COLOR', '#06080d');
 
-// ─── Language Detection ──────────────────────
-// Priority: ?lang= param → cookie → browser Accept-Language → default en
-function detectLang(): string {
-    $supported = ['en', 'ar'];
+// ─── Load Content ────────────────────────────
+// Load the UI text content
+$t = require __DIR__ . '/includes/lang/en.php';
 
-    // 1. URL parameter
-    if (isset($_GET['lang']) && in_array($_GET['lang'], $supported, true)) {
-        $lang = $_GET['lang'];
-        setcookie('beout_lang', $lang, time() + 86400 * 365, '/', '', false, true);
-        return $lang;
-    }
-
-    // 2. Cookie
-    if (isset($_COOKIE['beout_lang']) && in_array($_COOKIE['beout_lang'], $supported, true)) {
-        return $_COOKIE['beout_lang'];
-    }
-
-    // 3. Browser Accept-Language
-    $accept = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
-    if (stripos($accept, 'ar') === 0) {
-        return 'ar';
-    }
-
-    return 'en';
-}
-
-// ─── Load Translations ──────────────────────
-// English is always the source of truth.
-// Arabic is auto-translated via Google Translate API and cached.
-
-$lang    = detectLang();
-$langDir = __DIR__ . '/includes/lang';
-
-if ($lang === 'en') {
-    $t = require $langDir . '/en.php';
-} else {
-    // Auto-translate Arabic from English using the Translator service
-    require_once __DIR__ . '/includes/translator.php';
-    $t = Translator::generateLangFile($langDir);
-}
-
-define('CURRENT_LANG', $lang);
-define('LANG_DIR',     $t['lang_dir'] ?? ($lang === 'ar' ? 'rtl' : 'ltr'));
-define('ALT_LANG',     $lang === 'en' ? 'ar' : 'en');
+define('CURRENT_LANG', 'en');
+define('LANG_DIR',     'ltr');

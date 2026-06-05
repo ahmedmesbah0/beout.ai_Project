@@ -24,14 +24,17 @@ require_once __DIR__ . '/config.php';
 
     <?php include __DIR__ . '/includes/navbar.php'; ?>
     <?php include __DIR__ . '/includes/hero.php'; ?>
-    <?php include __DIR__ . '/includes/ticker.php'; ?>
+    <?php include __DIR__ . '/includes/countdown.php'; ?>
     <?php include __DIR__ . '/includes/stats.php'; ?>
+    <?php include __DIR__ . '/includes/trust-strip.php'; ?>
+    <?php include __DIR__ . '/includes/ticker.php'; ?>
     <?php include __DIR__ . '/includes/features.php'; ?>
+    <?php include __DIR__ . '/includes/how-it-works.php'; ?>
+    <?php include __DIR__ . '/includes/signup.php'; ?>
     <?php include __DIR__ . '/includes/footer.php'; ?>
 
-    <!-- Pass server-side lang data to JS -->
+    <!-- Pass server-side data to JS -->
     <script>
-        window.BEOUT_LANG = <?= json_encode(CURRENT_LANG) ?>;
         window.BEOUT_TAGLINES = <?= json_encode($t['taglines'], JSON_UNESCAPED_UNICODE) ?>;
     </script>
     <script src="<?= js() ?>"></script>

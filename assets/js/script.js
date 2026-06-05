@@ -5,6 +5,7 @@
    ============================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.body.classList.add('loaded');
     initParticles();
     initCountdown();
     initThreatTicker();
@@ -186,21 +187,54 @@ function renderTicker(threats) {
     const track = document.getElementById('ticker-track');
     if (!track) return;
     track.innerHTML = '';
-    [...threats, ...threats].forEach(t => track.appendChild(makeTickerEl(t, false)));
+    threats.forEach(t => track.appendChild(makeTickerEl(t, false)));
 }
 
 function injectThreat(threat) {
     const track = document.getElementById('ticker-track');
     if (!track) return;
+    
+    // Create new element
+    const el = makeTickerEl(threat, true);
+    
+    // Smoothly prepend instead of destroying the DOM
+    track.prepend(el);
+    
+    // Keep array synced
     liveThreats.unshift(threat);
-    if (liveThreats.length > MAX_TICKER_ITEMS) liveThreats = liveThreats.slice(0, MAX_TICKER_ITEMS);
+    
+    // Cleanup old elements
+    if (liveThreats.length > MAX_TICKER_ITEMS) {
+        liveThreats.pop();
+        if (track.lastElementChild) {
+            track.removeChild(track.lastElementChild);
+        }
+    }
 
-    track.innerHTML = '';
-    liveThreats.forEach((t, i) => track.appendChild(makeTickerEl(t, i === 0)));
-    liveThreats.forEach(t => track.appendChild(makeTickerEl(t, false)));
+    // Remove animation class after it finishes
+    el.addEventListener('animationend', () => el.classList.remove('ticker-item-new'), { once: true });
+}
 
-    const n = track.querySelector('.ticker-item-new');
-    if (n) n.addEventListener('animationend', () => n.classList.remove('ticker-item-new'), { once: true });
+const threatQueue = [];
+let isProcessingQueue = false;
+
+function processThreatQueue() {
+    if (threatQueue.length === 0) {
+        isProcessingQueue = false;
+        return;
+    }
+    
+    isProcessingQueue = true;
+    const threat = threatQueue.shift();
+    injectThreat(threat);
+    
+    // Dynamic smooth buffer playback:
+    // If queue is building up, play faster to catch up. Otherwise, normal smooth speed.
+    let delay = 1500; 
+    if (threatQueue.length > 5) delay = 800;
+    if (threatQueue.length > 15) delay = 300;
+    
+    setTimeout(processThreatQueue, delay);
 }
 
 function connectSSE() {
@@ -215,7 +249,10 @@ function connectSSE() {
     });
 
     src.addEventListener('attack', e => {
-        try { injectThreat(JSON.parse(e.data)); } catch (_) {}
+        try { 
+            threatQueue.push(JSON.parse(e.data)); 
+            if (!isProcessingQueue) processThreatQueue();
+        } catch (_) {}
     });
 
     src.addEventListener('counter', e => {
@@ -233,6 +270,10 @@ function connectSSE() {
         if (dot) dot.classList.remove('ticker-dot-live');
         if (sseRetryCount > 10) src.close();
     };
+
+    window.addEventListener('beforeunload', () => {
+        src.close();
+    });
 }
 
 async function initThreatTicker() {
@@ -289,8 +330,7 @@ function initForm() {
         if (!btn || !success) return;
 
         const btnText = btn.querySelector('.btn-text');
-        const lang = window.BEOUT_LANG || 'en';
-        if (btnText) btnText.textContent = lang === 'ar' ? 'جارٍ الإرسال...' : 'Sending...';
+        if (btnText) btnText.textContent = 'Sending...';
         btn.disabled = true;
 
         setTimeout(() => {

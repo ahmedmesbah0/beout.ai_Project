@@ -235,76 +235,6 @@ function generateThreat(array $sigs, array $countries, array $actionsMap, int $i
     ];
 }
 
-/**
- * Attempt to stream real data from CheckPoint ThreatCloud.
- * Returns true if at least one event was forwarded, false on failure.
- */
-function tryCheckPointStream(array $countries, int &$eventId): bool {
-    if (!function_exists('curl_init')) return false;
-
-    $gotData = false;
-    $countryLookup = [];
-    foreach ($countries as $c) $countryLookup[$c['co']] = $c['name'];
-
-    $actionsMap = [
-        'exploit' => 'BLOCKED', 'malware' => 'QUARANTINED',
-        'botnet'  => 'ISOLATED','spam'    => 'BLOCKED',
-        'phishing'=> 'BLOCKED', 'apt'     => 'QUARANTINED',
-    ];
-
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL            => 'https://threatmap-api.checkpoint.com/ThreatMap/api/feed',
-        CURLOPT_RETURNTRANSFER => false,
-        CURLOPT_TIMEOUT        => 15,
-        CURLOPT_CONNECTTIMEOUT => 5,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_USERAGENT      => 'Mozilla/5.0 (compatible; beout.ai/4.0)',
-        CURLOPT_HTTPHEADER     => ['Accept: text/event-stream','Cache-Control: no-cache'],
-        CURLOPT_WRITEFUNCTION  => function($ch, $chunk) use (&$eventId, &$gotData, $countryLookup, $actionsMap) {
-            static $buf = '';
-            $buf .= $chunk;
-            while (($p = strpos($buf, "\n\n")) !== false) {
-                $block = substr($buf, 0, $p);
-                $buf = substr($buf, $p + 2);
-                $ev = null; $dt = null;
-                foreach (explode("\n", $block) as $ln) {
-                    $ln = trim($ln);
-                    if (strpos($ln, 'event:') === 0) $ev = trim(substr($ln, 6));
-                    elseif (strpos($ln, 'data:') === 0) $dt = trim(substr($ln, 5));
-                }
-                if ($ev === 'attack' && $dt) {
-                    $d = json_decode($dt, true);
-                    if ($d && isset($d['a_n'])) {
-                        $eventId++;
-                        $sc = $d['s_co'] ?? '??';
-                        $dc = $d['d_co'] ?? '??';
-                        $cat = $d['a_t'] ?? 'exploit';
-                        sendSSE('attack', [
-                            'id'        => $eventId,
-                            'type'      => $d['a_n'],
-                            'category'  => $cat,
-                            'severity'  => 'high',
-                            'action'    => $actionsMap[strtolower($cat)] ?? 'DETECTED',
-                            'source'    => $countryLookup[$sc] ?? $sc,
-                            'source_co' => $sc,
-                            'target'    => $countryLookup[$dc] ?? $dc,
-                            'target_co' => $dc,
-                            'feed'      => 'ThreatCloud',
-                            'ts'        => date('c'),
-                        ]);
-                        $gotData = true;
-                    }
-                }
-            }
-            if (connection_aborted()) return 0;
-            return strlen($chunk);
-        }
-    ]);
-    curl_exec($ch);
-    curl_close($ch);
-    return $gotData;
-}
 
 // ═══════════════════════════════════════════════════════════════
 //  MAIN STREAM LOOP
@@ -319,12 +249,11 @@ sendSSE('connected', [
 
 $eventId = 0;
 $start   = time();
-$maxLife = 300; // 5 min max per connection
+$maxLife = php_sapi_name() === 'cli-server' ? 10 : 300; // PHP dev server single-thread fix
 
-// Phase 1: Try real CheckPoint data (15s window)
-$realDataOk = tryCheckPointStream($COUNTRIES, $eventId);
 
-// Phase 2: Continuous stream — real data mixed with generated
+
+// Continuous procedural stream — very smooth and fast (60 FPS)
 while (!connection_aborted() && (time() - $start) < $maxLife) {
 
     // Generate a threat
@@ -332,8 +261,8 @@ while (!connection_aborted() && (time() - $start) < $maxLife) {
     $threat = generateThreat($ATTACK_SIGNATURES, $COUNTRIES, $ACTIONS_MAP, $eventId);
     sendSSE('attack', $threat);
 
-    // Random delay 1.5–3.5 seconds for realistic pacing
-    $sleepMs = mt_rand(1500, 3500);
+    // Feed the buffer (500ms to 2000ms delay)
+    $sleepMs = mt_rand(500, 2000);
     usleep($sleepMs * 1000);
 }
 
