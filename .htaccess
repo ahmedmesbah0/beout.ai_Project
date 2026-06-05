@@ -8,6 +8,9 @@ Options -Indexes
 # ─── Default Document ─────────────────────────
 DirectoryIndex index.php
 
+# ─── Error Pages ──────────────────────────────
+ErrorDocument 404 /404.php
+
 # ─── Security Headers ─────────────────────────
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
@@ -15,10 +18,11 @@ DirectoryIndex index.php
     Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
     Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 </IfModule>
 
 # ─── Protect PHP Includes ─────────────────────
-<FilesMatch "^(config|includes/)">
+<FilesMatch "^(config\.php|includes/|data/)">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
@@ -29,13 +33,18 @@ DirectoryIndex index.php
     RewriteEngine On
     RewriteRule ^includes/ - [F,L]
     RewriteRule ^config\.php$ - [F,L]
+    RewriteRule ^data/ - [F,L]
     RewriteRule \.cache_ - [F,L]
+
+    # Sitemap: serve dynamic PHP version
+    RewriteRule ^sitemap\.xml$ sitemap.php [L]
 </IfModule>
 
 # ─── Cache Static Assets ──────────────────────
 <IfModule mod_expires.c>
     ExpiresActive On
     ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
     ExpiresByType text/css "access plus 1 week"
     ExpiresByType application/javascript "access plus 1 week"
     ExpiresByType font/woff2 "access plus 1 month"
@@ -43,5 +52,5 @@ DirectoryIndex index.php
 
 # ─── Compression ──────────────────────────────
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json text/event-stream
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json application/xml text/event-stream
 </IfModule>

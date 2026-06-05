@@ -20,7 +20,9 @@ venv/
 *.cache
 api/threat_cache.json
 includes/lang/.cache_*
-includes/lang/ar.php
+
+# beout.ai data (user-generated)
+data/
 
 # Gemini
 .gemini/

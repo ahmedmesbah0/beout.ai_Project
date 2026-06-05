@@ -33,9 +33,29 @@ function js():  string { return JS_PATH  . '?v=' . assetVersion(JS_PATH);  }
 // ─── Theme ───────────────────────────────────
 define('THEME_COLOR', '#06080d');
 
-// ─── Load Content ────────────────────────────
-// Load the UI text content
-$t = require __DIR__ . '/includes/lang/en.php';
+// ─── Language Detection ──────────────────────
+$lang = 'en';
+if (isset($_GET['lang']) && in_array($_GET['lang'], ['en', 'ar'], true)) {
+    $lang = $_GET['lang'];
+    setcookie('beout_lang', $lang, [
+        'expires'  => time() + 86400 * 365,
+        'path'     => '/',
+        'domain'   => '',
+        'secure'   => true,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+} elseif (isset($_COOKIE['beout_lang']) && in_array($_COOKIE['beout_lang'], ['en', 'ar'], true)) {
+    $lang = $_COOKIE['beout_lang'];
+}
 
-define('CURRENT_LANG', 'en');
-define('LANG_DIR',     'ltr');
+$langFile = __DIR__ . '/includes/lang/' . $lang . '.php';
+if (!file_exists($langFile)) {
+    $langFile = __DIR__ . '/includes/lang/en.php';
+    $lang = 'en';
+}
+
+$t = require $langFile;
+
+define('CURRENT_LANG', $lang);
+define('LANG_DIR',     $lang === 'ar' ? 'rtl' : 'ltr');

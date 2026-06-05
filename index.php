@@ -19,8 +19,6 @@ require_once __DIR__ . '/config.php';
 <body>
     <!-- Particle canvas -->
     <canvas id="particle-canvas" aria-hidden="true"></canvas>
-    <!-- Scan line -->
-    <div class="scan-line" aria-hidden="true"></div>
 
     <?php include __DIR__ . '/includes/navbar.php'; ?>
     <?php include __DIR__ . '/includes/hero.php'; ?>
@@ -29,8 +27,12 @@ require_once __DIR__ . '/config.php';
     <?php include __DIR__ . '/includes/trust-strip.php'; ?>
     <?php include __DIR__ . '/includes/ticker.php'; ?>
     <?php include __DIR__ . '/includes/features.php'; ?>
+    <?php include __DIR__ . '/includes/architecture.php'; ?>
     <?php include __DIR__ . '/includes/how-it-works.php'; ?>
+    <?php include __DIR__ . '/includes/solutions.php'; ?>
+    <?php include __DIR__ . '/includes/trust.php'; ?>
     <?php include __DIR__ . '/includes/signup.php'; ?>
+    <?php include __DIR__ . '/includes/cta-bottom.php'; ?>
     <?php include __DIR__ . '/includes/footer.php'; ?>
 
     <!-- Pass server-side data to JS -->

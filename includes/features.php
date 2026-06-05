@@ -1,7 +1,12 @@
 <?php defined('SITE_NAME') || exit; ?>
 
 <section class="features-section" id="features-section" aria-label="Features preview">
-    <h2 class="section-title"><?= $t['features_title'] ?></h2>
+    <div class="section-header">
+        <h2 class="section-title"><?= $t['features_title'] ?></h2>
+        <?php if (isset($t['features_subtitle'])): ?>
+        <p class="section-subtitle"><?= $t['features_subtitle'] ?></p>
+        <?php endif; ?>
+    </div>
     <div class="features-grid">
         <?php
         $features = [

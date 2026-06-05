@@ -3,6 +3,7 @@ User-agent: *
 Allow: /
 Disallow: /includes/
 Disallow: /config.php
-Disallow: /api/
+Disallow: /api/subscribe.php
+Disallow: /data/
 
 Sitemap: https://beout.ai/sitemap.xml

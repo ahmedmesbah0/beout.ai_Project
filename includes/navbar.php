@@ -15,7 +15,7 @@
             <span class="status-dot"></span>
             <span class="status-text"><?= $t['nav_status'] ?? 'Systems Initializing' ?></span>
         </div>
-
+        <a href="<?= $t['lang_toggle_url'] ?? '?lang=ar' ?>" class="lang-toggle" aria-label="Switch language"><?= $t['lang_toggle'] ?? 'العربية' ?></a>
         <button class="nav-hamburger" id="nav-hamburger" type="button" aria-label="Toggle menu" aria-expanded="false">
             <span class="hamburger-line"></span>
             <span class="hamburger-line"></span>
