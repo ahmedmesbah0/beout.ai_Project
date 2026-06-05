@@ -1,0 +1,8 @@
+# beout.ai — Robots.txt
+User-agent: *
+Allow: /
+Disallow: /includes/
+Disallow: /config.php
+Disallow: /api/
+
+Sitemap: https://beout.ai/sitemap.xml

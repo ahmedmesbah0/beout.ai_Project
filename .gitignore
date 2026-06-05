@@ -13,4 +13,18 @@ Thumbs.db
 # Node
 node_modules/
 
+# Python
 venv/
+
+# PHP cache/temp
+*.cache
+api/threat_cache.json
+includes/lang/.cache_*
+includes/lang/ar.php
+
+# Gemini
+.gemini/
+.claude/
+
+# beout.ai threat cache - auto-generated
+threat_cache.json
