@@ -5,7 +5,7 @@
         <div class="footer-col footer-brand-col">
             <div class="footer-brand">
                 <img src="assets/logo.png" alt="<?= SITE_NAME ?>" class="footer-logo" width="28" height="28">
-                <span class="footer-name">beout<span class="accent">.ai</span></span>
+                <span class="footer-name">beout.ai</span>
             </div>
             <p class="footer-tagline"><?= $t['footer_tagline'] ?? SITE_TAGLINE ?></p>
             <div class="footer-social">
