@@ -393,7 +393,7 @@ function initScrollReveal() {
         });
     }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
 
-    document.querySelectorAll('.feature-card, .stat-card, .how-step').forEach((el, i) => {
+    document.querySelectorAll('.feature-card, .stat-card, .how-step, .solution-card, .arch-layer-card, .trust-badge-card, .trust-extra-card, .enterprise-card').forEach((el, i) => {
         el.classList.add('reveal');
         el.dataset.revealDelay = i * 100; // stagger delay
         observer.observe(el);
